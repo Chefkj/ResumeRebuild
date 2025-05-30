@@ -1,0 +1,30 @@
+Senior Python Developer
+
+We are seeking an experienced Python Developer to join our growing team. The ideal candidate
+will have strong experience with Python, web frameworks like Django or Flask, and database
+technologies.
+
+Responsibilities:
+- Design and develop high-quality, scalable software solutions
+- Write clean, maintainable, and efficient code
+- Collaborate with cross-functional teams to define and implement new features
+- Troubleshoot and debug applications
+- Optimize applications for performance and scalability
+
+Requirements:
+- 4+ years of professional experience in Python development
+- Strong understanding of web technologies and RESTful APIs
+- Experience with Django, Flask, or similar Python web frameworks
+- Familiarity with front-end technologies (JavaScript, HTML, CSS)
+- Knowledge of relational databases (PostgreSQL, MySQL) and SQL
+- Experience with version control systems, particularly Git
+- Bachelor's degree in Computer Science or related field (or equivalent experience)
+- Strong problem-solving abilities and attention to detail
+- Excellent communication skills
+
+Preferred Qualifications:
+- Experience with container technologies (Docker, Kubernetes)
+- Knowledge of cloud platforms (AWS, GCP, or Azure)
+- Familiarity with test-driven development practices
+- Experience with Agile development methodologies
+- Contributions to open-source projects

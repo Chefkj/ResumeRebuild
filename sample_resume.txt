@@ -1,0 +1,31 @@
+JOHN DOE
+123 Main Street, City, State ZIP | (555) 555-5555 | john.doe@email.com
+
+SUMMARY
+Experienced software engineer with a strong background in Python development and web technologies.
+Skilled in developing scalable applications and implementing efficient algorithms.
+
+SKILLS
+Programming Languages: Python, JavaScript, Java
+Web Technologies: React, Django, Flask, HTML, CSS
+Tools & Platforms: Git, Docker, AWS, Linux
+
+EXPERIENCE
+Senior Software Engineer
+ABC Tech Inc., City, State
+January 2020 - Present
+- Developed and maintained multiple web applications using Python and Django
+- Implemented RESTful APIs serving over 10,000 requests per minute
+- Led a team of 3 junior developers on a project that reduced processing time by 40%
+
+Software Developer
+XYZ Solutions, City, State
+June 2017 - December 2019
+- Built responsive web interfaces using React and modern JavaScript
+- Integrated third-party APIs for payment processing and authentication
+- Optimized database queries resulting in 30% faster page load times
+
+EDUCATION
+Bachelor of Science in Computer Science
+University of Technology, City, State
+Graduated: May 2017

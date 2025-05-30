@@ -1,0 +1,22 @@
+{
+  "file_path": "/Users/kj/ResumeRebuild/src/utils/pdf_text_preprocessor.py",
+  "changes": [
+    {
+      "type": "modify",
+      "lineStart": 10,
+      "lineEnd": 11,
+      "text": "if text is None:\n        logger.error(\"Input text is None, returning empty string\")\n        return \"\"\n    lines = text.split('\\n')",
+      "description": "Code implementation at line 10"
+    },
+    {
+      "type": "modify",
+      "lineStart": 10,
+      "lineEnd": 11,
+      "text": "def split_embedded_headers(text, header_keywords=None):\n    \"\"\"\n    Process text with embedded section headers and split them into proper sections.\n    \n    Args:\n        text (str): The raw text extracted from a PDF\n        header_keywords (list): List of header keywords to look for\n        \n    Returns:\n        str: Processed text with section headers properly separated\n    \"\"\"\n    if text is None:\n        logger.error(\"Input text to split_embedded_headers is None, returning empty string.\")\n        return \"\"\n    \n    if not isinstance(text, str):\n        try:\n            text = str(text)\n        except Exception as e:\n            logger.error(f\"Could not convert input to string: {e}\")\n            return \"\"\n    \n    # Proceed with splitting lines\n    lines = text.split('\\n')\n    # ... rest of the code ...",
+      "description": "Code implementation at line 10"
+    }
+  ],
+  "task": "add tesseract ocr for text extraction, map to pdf document, with traversable class that holds both text and text with pdf metadata",
+  "timestamp": "20250530_121950",
+  "original_file": "/Users/kj/ResumeRebuild/src/utils/pdf_text_preprocessor.py"
+}

@@ -1,0 +1,15 @@
+{
+  "file_path": "/Users/kj/ResumeRebuild/src/gui.py",
+  "changes": [
+    {
+      "type": "modify",
+      "lineStart": 4,
+      "lineEnd": 24,
+      "text": "def browse_resume(self):\n    self.input_pdf_path = filedialog.askopenfilename(filetypes=[(\"PDF files\", \"*.pdf\")])\n    self.file_path_var.set(self.input_pdf_path)\n    if self.input_pdf_path:\n        extractor = PDFExtractor()\n        self.resume_content = extractor.extract_text(self.input_pdf_path)",
+      "description": "Code implementation for def browse_resume(self):"
+    }
+  ],
+  "task": "add error handling for the connection to the managerai resume_api",
+  "timestamp": "20250526_124733",
+  "original_file": "/Users/kj/ResumeRebuild/src/gui.py"
+}

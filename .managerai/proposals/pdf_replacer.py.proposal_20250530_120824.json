@@ -1,0 +1,15 @@
+{
+  "file_path": "/Users/kj/ResumeRebuild/src/utils/pdf_replacer.py",
+  "changes": [
+    {
+      "type": "modify",
+      "lineStart": 10,
+      "lineEnd": 10,
+      "text": "try:\n    # Existing code for extracting text using pdfminer\nexcept (IOError, PDFSyntaxError) as e:\n    logger.error(f\"Failed to extract text from PDF: {e}\")\n    # Perhaps return None or re-raize? Depends on how errors are handled.",
+      "description": "Code implementation at line 10"
+    }
+  ],
+  "task": "add tesseract ocr for text extraction, map to pdf document, with traversable class that holds both text and text with pdf metadata",
+  "timestamp": "20250530_120824",
+  "original_file": "/Users/kj/ResumeRebuild/src/utils/pdf_replacer.py"
+}

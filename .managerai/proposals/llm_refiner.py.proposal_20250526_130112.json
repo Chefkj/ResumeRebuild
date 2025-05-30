@@ -1,0 +1,22 @@
+{
+  "file_path": "/Users/kj/ResumeRebuild/src/utils/llm_refiner.py",
+  "changes": [
+    {
+      "type": "modify",
+      "lineStart": 46,
+      "lineEnd": 47,
+      "text": "def _check_api_connection(self):\n        \"\"\"Check if the ManageAI API is accessible with retries.\"\"\"\n        max_retries = 5  # Or some suitable number\n        backoff_factor = 0.5\n        for attempt in range(max_retries + 1):\n            try:\n                response = requests.get(f\"{self.api_url}/\", timeout=5)\n                response.raise_for_status()\n                logger.info(\"Successfully connected to ManageAI API\")\n                return True\n            except (ConnectionError, Timeout) as e:\n                if attempt < max_retries:\n                    wait_time = backoff_factor * (2 ** attempt)\n                    logger.warning(f\"Attempt {attempt + 1} failed: {e}. Retrying in {wait_time:.2f} seconds.\")\n                    time.sleep(wait_time)\n                else:\n                    logger.error(f\"Max retries reached ({max_retries}), giving up. API issues may cause refinement to fail.\")\n            except HTTPError as e:\n                logger.error(f\"HTTP error occurred: {e}. Response status code: {response.status_code}\" if 'response' in locals() else f\"HTTP error occurred but response not available.\")\n                return False\n            except requests.RequestException as e:\n                logger.error(f\"An unexpected error occurred: {e}\")\n                return False\n        return False",
+      "description": "Code implementation at line 46"
+    },
+    {
+      "type": "modify",
+      "lineStart": 46,
+      "lineEnd": 47,
+      "text": "def _check_api_connection(self):\n        \"\"\"\n        Check if the ManageAI API is accessible with exponential backoff.\n        \n        Returns:\n            bool: True if connected successfully, False otherwise.\n        \"\"\"\n        max_retries = 3  # Maximum number of retry attempts\n        backoff_factor = 0.5  # Exponential backoff factor\n        attempt = 0\n        \n        while attempt <= max_retries:\n            try:\n                response = requests.get(f\"{self.api_url}/\", timeout=5)\n                response.raise_for_status()\n                logger.info(\"Successfully connected to ManageAI API\")\n                return True\n            except (ConnectionError, Timeout) as e:\n                # These are typically safe to retry\n                if attempt < max_retries:\n                    wait_time = backoff_factor * (2 ** attempt)\n                    logger.warning(f\"Attempt {attempt + 1} failed: {e}. Retrying in {wait_time:.2f} seconds.\")\n                    time.sleep(wait_time)\n                    attempt += 1\n                else:\n                    logger.error(\"Max retries reached. Unable to connect to ManageAI API.\")\n                    return False\n            except HTTPError as e:\n                # Check if the error is a server error (5xx), which may be recoverable\n                if response.status_code // 100 == 5:\n                    if attempt < max_retries:\n                        wait_time = backoff_factor * (2 ** attempt)\n                        logger.warning(f\"Attempt {attempt + 1} failed with HTTP {response.status_code}: {e}. Retrying in {wait_time:.2f} seconds.\")\n                        time.sleep(wait_time)\n                        attempt += 1\n                    else:\n                        logger.error(f\"Max retries reached. Last error: HTTP {response.status_code}, {e}\")\n                        return False\n                else:\n                    # Other HTTP errors (4xx) are unlikely to be transient, re-raise or return False\n                    logger.error(f\"HTTP error occurred: {e}. Response status code: {response.status_code}\")\n                    return False\n            except requests.RequestException as e:\n                # Catch any other request exceptions\n                logger.error(f\"An unexpected error occurred: {e}\")\n                return False\n        \n        # If we exit the loop, it's because of max retries\n        logger.error(\"Max retries reached. Unable to connect.\")\n        return False",
+      "description": "Code implementation at line 46"
+    }
+  ],
+  "task": "add error handling for the connection to the managerai resume_api",
+  "timestamp": "20250526_130112",
+  "original_file": "/Users/kj/ResumeRebuild/src/utils/llm_refiner.py"
+}

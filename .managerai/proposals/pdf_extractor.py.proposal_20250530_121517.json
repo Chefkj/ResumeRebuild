@@ -1,0 +1,43 @@
+{
+  "file_path": "/Users/kj/ResumeRebuild/src/utils/pdf_extractor.py",
+  "changes": [
+    {
+      "type": "modify",
+      "lineStart": 4,
+      "lineEnd": 24,
+      "text": "def _extract_with_pdfminer(self, pdf_path):\n        \"\"\"Extract text using PDFMiner.\"\"\"\n        output = io.StringIO()\n        with open(pdf_path, 'rb') as pdf_file:\n            extract_text_to_fp(pdf_file, output, laparams=LAParams())\n        \n        return output.getvalue()",
+      "description": "Code implementation for def _extract_with_pdfminer(self, pdf_path):"
+    },
+    {
+      "type": "modify",
+      "lineStart": 4,
+      "lineEnd": 24,
+      "text": "def _extract_with_pdfminer(self, pdf_path):\n        \"\"\"Extract text using PDFMiner, with improved error handling.\"\"\"\n        try:\n            with open(pdf_path, 'rb') as pdf_file:\n                # Extract text using PDFMiner\n                output = io.StringIO()\n                extract_text_to_fp(pdf_file, output, laparams=LAparams())\n                return output.getvalue()\n        except Exception as e:\n            logger.error(f\"Error extracting text with PDFMiner: {e}\")\n            return \"\"",
+      "description": "Code implementation for def _extract_with_pdfminer(self, pdf_path):"
+    },
+    {
+      "type": "modify",
+      "lineStart": 4,
+      "lineEnd": 24,
+      "text": "def _extract_with_pypdf2(self, pdf_path):\n        \"\"\"Extract text using PyPDF2.\"\"\"\n        text = \"\"\n        try:\n            with open(pdf_path, 'rb') as file:\n                pdf = PdfReader(file)\n                for page in pdf.pages:\n                    text += page.extract_text()\n        except Exception as e:\n            # Handle exception\n            pass\n        return text",
+      "description": "Code implementation for def _extract_with_pypdf2(self, pdf_path):"
+    },
+    {
+      "type": "modify",
+      "lineStart": 4,
+      "lineEnd": 24,
+      "text": "def _extract_with_pypdf2(self, pdf_path):\n        \"\"\"Extract text using PyPDF2 with improved error handling.\"\"\"\n        try:\n            with open(pdf_path, 'rb') as file:\n                pdf = PdfReader(file)\n                text = \"\"\n                for page in pdf.pages:\n                    text += page.extract_text()\n            return text\n        except Exception as e:\n            logger.error(f\"Error extracting text with PyPDF2: {e}\")\n            return \"\"",
+      "description": "Code implementation for def _extract_with_pypdf2(self, pdf_path):"
+    },
+    {
+      "type": "modify",
+      "lineStart": 4,
+      "lineEnd": 24,
+      "text": "def _extract_with_external_tools(self, pdf_path):\n        \"\"\"Extract text using external tools like pdftotext or ocrmypdf.\"\"\"\n        # ... existing code ...\n        # But in the original code, it's in a try block that passes on exception.\n        # So replace the except block to log the error.",
+      "description": "Code implementation for def _extract_with_external_tools(self, pdf_path):"
+    }
+  ],
+  "task": "add tesseract ocr for text extraction, map to pdf document, with traversable class that holds both text and text with pdf metadata",
+  "timestamp": "20250530_121517",
+  "original_file": "/Users/kj/ResumeRebuild/src/utils/pdf_extractor.py"
+}

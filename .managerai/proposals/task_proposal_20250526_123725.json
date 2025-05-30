@@ -1,0 +1,43 @@
+{
+  "task": "add error handling for the connection to the managerai resume_api",
+  "timestamp": "2025-05-26T12:37:24.932870",
+  "completion_time": 0.41765928268432617,
+  "plan": {
+    "task": "add error handling for the connection to the managerai resume_api",
+    "plan": [],
+    "formatted_plan": "No plan elements found.",
+    "has_hierarchical_plan": true,
+    "metadata": {
+      "creation_time": 9.059906005859375e-06,
+      "timestamp": "2025-05-26 12:37:24",
+      "planner_type": "htn"
+    },
+    "subtasks": [
+      "Error: Failed to connect to LMStudio API (HTTPConnectionPool(host='localhost', port=1234): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x303d29070>: Failed to establish a new connection: [Errno 61] Connection refused'))). Please verify that LM Studio is running and accessible."
+    ],
+    "generated_by_boy_blue": true
+  },
+  "file_proposals": {
+    ".": {
+      "status": "directory",
+      "processed_files": {
+        "/Users/kj/ResumeRebuild/src/gui.py": {
+          "status": "skipped",
+          "reason": "No relevant subtasks identified"
+        },
+        "/Users/kj/ResumeRebuild/src/utils/local_llm_adapter.py": {
+          "status": "skipped",
+          "reason": "No relevant subtasks identified"
+        },
+        "/Users/kj/ResumeRebuild/src/utils/pdf_extractor.py": {
+          "status": "skipped",
+          "reason": "No relevant subtasks identified"
+        },
+        "/Users/kj/ResumeRebuild/src/utils/llm_refiner.py": {
+          "status": "skipped",
+          "reason": "No relevant subtasks identified"
+        }
+      }
+    }
+  }
+}
