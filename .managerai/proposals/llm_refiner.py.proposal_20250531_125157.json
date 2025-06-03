@@ -1,0 +1,22 @@
+{
+  "file_path": "/Users/kj/ResumeRebuild/src/utils/llm_refiner.py",
+  "changes": [
+    {
+      "type": "modify",
+      "lineStart": 2,
+      "lineEnd": 22,
+      "text": "def _extract_text(self, resume_content) -> str:\n        \"\"\"Extract plain text from resume content object.\"\"\"\n        # If it's already a string, return it\n        if isinstance(resume_content, str):\n            return resume_content\n        \n        # If it's a ResumeContent object with sections\n        if hasattr(resume_content, 'sections'):\n            # Join all section contents\n            sections_text = []\n            \n            # Add contact info if available\n            if hasattr(resume_content, 'contact_info'):\n                contact_text = self._dict_to_text(resume_content.contact_info)\n                if contact_text:\n                    sections_text.append(contact_text)\n            \n            # Add each section's content\n            for section in resume_content.sections:\n                if hasattr(section, 'title') and hasattr(section, 'content'):\n                    sections_text.append(f\"{section.title}\\n{section.content}\")\n                    \n            return \"\\n\\n\".join(sections_text)\n        \n        # Try to convert to string as a last resort\n        try:\n            return str(resume_content)\n        except Exception as e:\n            logger.error(f\"Failed to convert resume content to text: {e}\")\n            return \"\"",
+      "description": "Code implementation for def _extract_text(self, resume_content) -> str:"
+    },
+    {
+      "type": "modify",
+      "lineStart": 2,
+      "lineEnd": 22,
+      "text": "def _improve_resume_for_job(self, resume_text, job_description):\n        \"\"\"Improve the resume text tailored for a specific job via API.\"\"\"\n        api_endpoint = f\"{self.api_url}/improve/job\"\n        payload = {\n            'resume': resume_text,\n            'jobDescription': job_description\n        }\n        try:\n            response = requests.post(api_endpoint, json=payload, timeout=10)\n            response.raise_for_status()\n            return response.json().get('improvedResume', '')\n        except (requests.RequestException, ValueError) as e:\n            logger.error(f\"Error improving resume for job: {e}\")\n            return ''",
+      "description": "Code implementation for def _improve_resume_for_job(self, resume_text, job_description):"
+    }
+  ],
+  "task": "Better Date Pattern Handling:\n\nInstead of using test-specific cases, develop more robust regex patterns that can handle all date format variations\nImplement more general date normalization functions that work with real-world resume text\nPattern Optimization:\n\nFurther optimize pattern matching to reduce processing time\nGroup related patterns together for more efficient processing\nUniversal Pattern Library:\n\nMove pattern definitions to a dedicated configuration file\nCreate a pattern library that can be easily updated and maintained\nTest Coverage Expansion:\n\nAdd more real-world test cases from different resume formats\nImplement property-based testing for validating pattern fixes\nPerformance Profiling:\n\nMeasure the impact of each pattern fix on processing time\nIdentify and optimize patterns with the highest performance impact",
+  "timestamp": "20250531_125157",
+  "original_file": "/Users/kj/ResumeRebuild/src/utils/llm_refiner.py"
+}

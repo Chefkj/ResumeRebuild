@@ -1,0 +1,99 @@
+{
+  "task": "add tesseract ocr for text extraction, map to pdf document, with traversable class that holds both text and text with pdf metadata",
+  "timestamp": "2025-05-30T11:51:15.295417",
+  "completion_time": 4400.628065824509,
+  "plan": {
+    "task": "add tesseract ocr for text extraction, map to pdf document, with traversable class that holds both text and text with pdf metadata",
+    "plan": [],
+    "formatted_plan": "No plan elements found.",
+    "has_hierarchical_plan": true,
+    "metadata": {
+      "creation_time": 7.867813110351562e-06,
+      "timestamp": "2025-05-30 11:50:39",
+      "planner_type": "htn"
+    },
+    "subtasks": [
+      "*Subtask 1: Install and Configure Tesseract OCR**",
+      "**Task Description:** Integrate Tesseract OCR engine into our application.",
+      "**Actionable Steps:**",
+      "**Code Implementation:** Modify the `requirements.txt` file to include `pytesseract` and install it using pip in the `setup.py` script.",
+      "**Technical Integration Requirements:**",
+      "*Subtask 2: Implement Text Extraction using Tesseract OCR**",
+      "**Task Description:** Use Tesseract OCR to extract text from images or PDFs.",
+      "**Actionable Steps:**",
+      "**Code Implementation:** Write a Python function using `pytesseract.image_to_string()` or `pytesseract.pdf_to_string()` to extract text from images and PDFs respectively. Handle exceptions using try-except blocks.",
+      "**API Integration Requirements:**",
+      "*Subtask 3: Create a Traversable Class to Store Text and PDF Metadata**",
+      "**Task Description:** Design a traversable class that holds both extracted text and metadata from the PDF document.",
+      "**Actionable Steps:**",
+      "**Code Implementation:** Create a Python class using object-oriented programming principles. Use methods to get/set attributes and implement serialization/deserialization for metadata.",
+      "**Data Flow Requirements:**",
+      "*Subtask 4: Integrate Traversable Class with Text Extraction (Optional)**",
+      "**Task Description:** Optionally integrate the traversable class with the text extraction process to store metadata alongside extracted text.",
+      "**Actionable Steps:**",
+      "**Code Implementation:** Integrate the traversable class with the existing text extraction function. Use the traversable class instance to store both extracted text and PDF metadata.",
+      "*Subtask 5: Map Text Extraction Results to PDF Document**",
+      "**Task Description:** Map the extracted text and metadata from the traversable class to a corresponding PDF document.",
+      "**Actionable Steps:**",
+      "**Code Implementation:** Write a Python function that uses PyPDF2 or reportlab to create a new PDF document from the traversable class instance. Map extracted text and metadata accordingly."
+    ],
+    "generated_by_boy_blue": true
+  },
+  "file_proposals": {
+    ".": {
+      "status": "directory",
+      "processed_files": {
+        "/Users/kj/ResumeRebuild/src/utils/pdf_replacer_enhanced.py": {
+          "status": "completed",
+          "proposal_path": ".managerai/proposals/pdf_replacer_enhanced.py.proposal_20250530_120312.json",
+          "change_count": 1
+        },
+        "/Users/kj/ResumeRebuild/src/utils/pdf_replacer.py": {
+          "status": "completed",
+          "proposal_path": ".managerai/proposals/pdf_replacer.py.proposal_20250530_120824.json",
+          "change_count": 1
+        },
+        "/Users/kj/ResumeRebuild/src/utils/pdf_extractor.py": {
+          "status": "completed",
+          "proposal_path": ".managerai/proposals/pdf_extractor.py.proposal_20250530_121517.json",
+          "change_count": 5
+        },
+        "/Users/kj/ResumeRebuild/src/utils/pdf_text_preprocessor.py": {
+          "status": "completed",
+          "proposal_path": ".managerai/proposals/pdf_text_preprocessor.py.proposal_20250530_121950.json",
+          "change_count": 2
+        },
+        "/Users/kj/ResumeRebuild/src/utils/pdf_direct_replacer.py": {
+          "status": "completed",
+          "proposal_path": ".managerai/proposals/pdf_direct_replacer.py.proposal_20250530_122957.json",
+          "change_count": 1
+        },
+        "/Users/kj/ResumeRebuild/pdf_extraction_test.py": {
+          "status": "completed",
+          "proposal_path": ".managerai/proposals/pdf_extraction_test.py.proposal_20250530_123944.json",
+          "change_count": 1
+        },
+        "/Users/kj/ResumeRebuild/src/gui.py": {
+          "status": "completed",
+          "proposal_path": ".managerai/proposals/gui.py.proposal_20250530_124627.json",
+          "change_count": 1
+        },
+        "/Users/kj/ResumeRebuild/src/utils/section_extractor.py": {
+          "status": "completed",
+          "proposal_path": ".managerai/proposals/section_extractor.py.proposal_20250530_125115.json",
+          "change_count": 1
+        },
+        "/Users/kj/ResumeRebuild/src/utils/llm_refiner.py": {
+          "status": "completed",
+          "proposal_path": ".managerai/proposals/llm_refiner.py.proposal_20250530_125617.json",
+          "change_count": 1
+        },
+        "/Users/kj/ResumeRebuild/src/utils/section_classifier.py": {
+          "status": "completed",
+          "proposal_path": ".managerai/proposals/section_classifier.py.proposal_20250530_130359.json",
+          "change_count": 3
+        }
+      }
+    }
+  }
+}

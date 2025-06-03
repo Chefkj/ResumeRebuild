@@ -1,0 +1,81 @@
+{
+  "task": "improve on tesseract ocr solution, it's currently not pulling text out in sequential order.  integrate with extraction pattern library",
+  "timestamp": "2025-05-31T17:58:13.875964",
+  "completion_time": 3915.1180369853973,
+  "plan": {
+    "task": "improve on tesseract ocr solution, it's currently not pulling text out in sequential order.  integrate with extraction pattern library",
+    "plan": [],
+    "formatted_plan": "No plan elements found.",
+    "has_hierarchical_plan": true,
+    "metadata": {
+      "creation_time": 1.0967254638671875e-05,
+      "timestamp": "2025-05-31 17:57:47",
+      "planner_type": "htn"
+    },
+    "subtasks": [
+      "**Subtask 1: Analyze Tesseract OCR Output**",
+      "**Subtask 2: Integrate Extraction Pattern Library**",
+      "**Subtask 3: Develop Sequential Text Ordering Algorithm**",
+      "**Subtask 4: Refactor Code for Integration**",
+      "**Subtask 5: Test and Validate Integration**"
+    ],
+    "generated_by_boy_blue": true
+  },
+  "file_proposals": {
+    ".": {
+      "status": "directory",
+      "processed_files": {
+        "/Users/kj/ResumeRebuild/src/utils/pattern_library.py": {
+          "status": "completed",
+          "proposal_path": ".managerai/proposals/pattern_library.py.proposal_20250531_180811.json",
+          "change_count": 1
+        },
+        "/Users/kj/ResumeRebuild/src/utils/ocr_text_extraction.py": {
+          "status": "completed",
+          "proposal_path": ".managerai/proposals/ocr_text_extraction.py.proposal_20250531_181310.json",
+          "change_count": 2
+        },
+        "/Users/kj/ResumeRebuild/src/utils/pdf_replacer_enhanced.py": {
+          "status": "completed",
+          "proposal_path": ".managerai/proposals/pdf_replacer_enhanced.py.proposal_20250531_181827.json",
+          "change_count": 1
+        },
+        "/Users/kj/ResumeRebuild/src/utils/pdf_extractor.py": {
+          "status": "completed",
+          "proposal_path": ".managerai/proposals/pdf_extractor.py.proposal_20250531_182522.json",
+          "change_count": 1
+        },
+        "/Users/kj/ResumeRebuild/src/utils/ocr_section_extractor_improved.py": {
+          "status": "completed",
+          "proposal_path": ".managerai/proposals/ocr_section_extractor_improved.py.proposal_20250531_183013.json",
+          "change_count": 1
+        },
+        "/Users/kj/ResumeRebuild/test_improved_ocr_extraction.py": {
+          "status": "completed",
+          "proposal_path": ".managerai/proposals/test_improved_ocr_extraction.py.proposal_20250531_183506.json",
+          "change_count": 1
+        },
+        "/Users/kj/ResumeRebuild/src/utils/ocr_section_extractor.py": {
+          "status": "completed",
+          "proposal_path": ".managerai/proposals/ocr_section_extractor.py.proposal_20250531_184000.json",
+          "change_count": 1
+        },
+        "/Users/kj/ResumeRebuild/src/utils/pdf_replacer.py": {
+          "status": "completed",
+          "proposal_path": ".managerai/proposals/pdf_replacer.py.proposal_20250531_184642.json",
+          "change_count": 1
+        },
+        "/Users/kj/ResumeRebuild/test_merged_location_handling.py": {
+          "status": "completed",
+          "proposal_path": ".managerai/proposals/test_merged_location_handling.py.proposal_20250531_185738.json",
+          "change_count": 1
+        },
+        "/Users/kj/ResumeRebuild/test_ocr_extraction.py": {
+          "status": "completed",
+          "proposal_path": ".managerai/proposals/test_ocr_extraction.py.proposal_20250531_190302.json",
+          "change_count": 4
+        }
+      }
+    }
+  }
+}

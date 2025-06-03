@@ -1,0 +1,29 @@
+{
+  "file_path": "/Users/kj/ResumeRebuild/src/utils/section_classifier.py",
+  "changes": [
+    {
+      "type": "modify",
+      "lineStart": 2,
+      "lineEnd": 22,
+      "text": "def _match_by_title(self, title) -> Tuple[str, float]:\n    for section_type, patterns in self.compiled_patterns.items():\n        for pattern in patterns:\n            if pattern.search(title):\n                return (section_type, 0.9)\n    # Check for partial matches based on formatting_clues\n    for section_type, clues in self.formatting_clues.items():\n        for clue in clues:\n            if re.search(r'\\b' + re.escape(clue.lower()) + r'\\b', title.lower()):\n                return (section_type, 0.8)\n    # ... other code ...",
+      "description": "Code implementation for def _match_by_title(self, title) -> Tuple[str, float]:"
+    },
+    {
+      "type": "modify",
+      "lineStart": 2,
+      "lineEnd": 22,
+      "text": "def _match_by_title(self, title: Optional[str] -> Tuple[str, float]:\n    if title is None:\n        return (\"unknown\", 0.0)\n    # existing code",
+      "description": "Code implementation for def _match_by_title(self, title: Optional[str] -> Tuple[str, float]:"
+    },
+    {
+      "type": "modify",
+      "lineStart": 2,
+      "lineEnd": 22,
+      "text": "def classify_section(self, section_title, section_content) -> Tuple[str, float]:\n    # First, try to match by section title\n    best_match = self._match_by_title(section_title)\n    if best_match[1] > 0.8:  # High confidence threshold\n        return best_match\n    \n    # If title matching isn't confident, try content-based classification\n    content_match = self._match_by_content(section_content)\n    \n    # ... rest of the code ...",
+      "description": "Code implementation for def classify_section(self, section_title, section_content) -> Tuple[str, float]:"
+    }
+  ],
+  "task": "add tesseract ocr for text extraction, map to pdf document, with traversable class that holds both text and text with pdf metadata",
+  "timestamp": "20250530_130359",
+  "original_file": "/Users/kj/ResumeRebuild/src/utils/section_classifier.py"
+}

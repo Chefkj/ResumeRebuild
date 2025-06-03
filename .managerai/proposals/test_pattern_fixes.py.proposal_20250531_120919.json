@@ -1,0 +1,15 @@
+{
+  "file_path": "/Users/kj/ResumeRebuild/src/utils/test_pattern_fixes.py",
+  "changes": [
+    {
+      "type": "modify",
+      "lineStart": 0,
+      "lineEnd": 86,
+      "text": "- name: state_verb\n  patterns:\n    - pattern: 'UtahDeveloped'\n      description: 'Utah\\nDeveloped'\n    ...",
+      "description": "Complete file replacement based on largest code block"
+    }
+  ],
+  "task": "Better Date Pattern Handling:\n\nInstead of using test-specific cases, develop more robust regex patterns that can handle all date format variations\nImplement more general date normalization functions that work with real-world resume text\nPattern Optimization:\n\nFurther optimize pattern matching to reduce processing time\nGroup related patterns together for more efficient processing\nUniversal Pattern Library:\n\nMove pattern definitions to a dedicated configuration file\nCreate a pattern library that can be easily updated and maintained\nTest Coverage Expansion:\n\nAdd more real-world test cases from different resume formats\nImplement property-based testing for validating pattern fixes\nPerformance Profiling:\n\nMeasure the impact of each pattern fix on processing time\nIdentify and optimize patterns with the highest performance impact",
+  "timestamp": "20250531_120919",
+  "original_file": "/Users/kj/ResumeRebuild/src/utils/test_pattern_fixes.py"
+}

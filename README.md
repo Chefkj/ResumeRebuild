@@ -1,9 +1,10 @@
-# Resume Rebuilder with ManageAI and LLM Studio Integration
+# Resume Rebuilder with Enhanced OCR, ManageAI and LLM Studio Integration
 
-This application provides tools to improve resumes using both direct LLM Studio integration and the ManageAI Resume API.
+This application provides tools to improve resumes using both direct LLM Studio integration and the ManageAI Resume API, with enhanced OCR text extraction for better resume parsing.
 
 ## Features
 
+- **Enhanced OCR Text Extraction**: Robust extraction of text from PDF resumes with intelligent pattern correction
 - **Direct LLM Studio Integration**: Connect directly to a locally running LLM Studio instance
 - **ManageAI API Integration**: Connect to the ManageAI Resume API for advanced resume processing
 - **Resume Analysis**: Get detailed analysis of your resume
@@ -12,14 +13,34 @@ This application provides tools to improve resumes using both direct LLM Studio 
 - **ATS Compatibility Check**: Ensure your resume is compatible with Applicant Tracking Systems
 - **Automatic Server Management**: The ManageAI Resume API server is automatically started and stopped with the application
 
+## Advanced OCR Features
+
+- **Merged Pattern Detection**: Fixes merged location-verb patterns (e.g., "UtahActed" → "Utah\nActed")
+- **Section Header Handling**: Properly identifies and formats embedded section headers
+- **Multiple SKILLS Section Handling**: Properly formats duplicate SKILLS sections
+- **Broken Line Detection**: Identifies and fixes lines incorrectly broken during OCR extraction
+- **Contact Information Enhancement**: Extracts and formats emails, phone numbers, and LinkedIn URLs
+- **Date Format Correction**: Fixes broken date formats commonly found in resumes
+
 ## Setup
 
-1. Install the required dependencies:
+1. Install external dependencies:
+   - **Tesseract OCR** (required for PDF text extraction):
+     - macOS: `brew install tesseract`
+     - Ubuntu: `sudo apt-get install tesseract-ocr`
+     - Windows: Download from [UB-Mannheim's GitHub](https://github.com/UB-Mannheim/tesseract/wiki)
+
+   - **Poppler** (required for PDF to image conversion):
+     - macOS: `brew install poppler`
+     - Ubuntu: `sudo apt-get install poppler-utils`
+     - Windows: Download from [poppler-windows](http://blog.alivate.com.au/poppler-windows/)
+
+2. Install Python dependencies:
    ```bash
    pip install -r requirements.txt
    ```
 
-2. Make sure you have either:
+3. Make sure you have either:
    - LLM Studio running locally (for direct integration)
    - ManageAI Resume API installed at `/Users/kj/managerai/resume_api.py`
 
@@ -49,6 +70,47 @@ You can also manually manage the server using the `manage_api_server.py` script:
 ## API Configuration
 
 The application is configured to use the following default settings:
+
+## OCR Text Extraction Improvements
+
+The Resume Rebuilder includes enhanced OCR-based text extraction from PDF resumes, with the following improvements:
+
+### OCR Text Extraction Module (`ocr_text_extraction.py`)
+
+- **Advanced image preprocessing** for better text recognition
+- **Multiple OCR configurations** to get the best possible text extraction
+- **Smart result selection** algorithm to pick the most accurate OCR result
+- **Automatic Tesseract environment detection** to locate language data files
+
+### Text Utilities Module (`text_utils.py`)
+
+- **Broken line detection** to identify and fix incorrectly broken lines
+- **Contact information extraction** for emails, phones, LinkedIn URLs, and locations
+
+### Section Extraction Module (`ocr_section_extractor_improved.py`)
+
+- **Enhanced section boundary detection** for better section identification
+- **Hierarchical content handling** to properly organize job titles and dates
+- **Improved section classification** with confidence scores
+
+### Testing
+
+The OCR system can be tested using the provided test scripts:
+
+1. **Test specific pattern fixes**:
+   ```bash
+   python test_merged_location_handling.py --test-patterns
+   ```
+
+2. **Test comprehensive OCR pipeline**:
+   ```bash
+   python test_ocr_full_pipeline.py --pdf path/to/resume.pdf
+   ```
+
+3. **Generate and validate test cases**:
+   ```bash
+   python generate_ocr_test_cases.py --run
+   ```
 - Server: `http://localhost:8080`
 - API Key: Environment variable `RESUME_API_KEY` or default test key
 

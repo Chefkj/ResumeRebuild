@@ -1,0 +1,15 @@
+{
+  "file_path": "/Users/kj/ResumeRebuild/src/utils/ocr_section_extractor_improved.py",
+  "changes": [
+    {
+      "type": "modify",
+      "lineStart": 0,
+      "lineEnd": 568,
+      "text": "except Exception as e:\n    logger.error(f\"Error in OCR-based section extraction: {e}\")\n    import traceback\n    traceback.print_exc()\n    # Fallback to regular section extraction\n    logger.info(\"Falling back to regular section extraction\")\n    return super().extract_sections(pdf_path)",
+      "description": "Complete file replacement based on largest code block"
+    }
+  ],
+  "task": "improve on tesseract ocr solution, it's currently not pulling text out in sequential order.  integrate with extraction pattern library",
+  "timestamp": "20250531_183013",
+  "original_file": "/Users/kj/ResumeRebuild/src/utils/ocr_section_extractor_improved.py"
+}

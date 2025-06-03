@@ -1,0 +1,15 @@
+{
+  "file_path": "/Users/kj/ResumeRebuild/src/gui.py",
+  "changes": [
+    {
+      "type": "modify",
+      "lineStart": 0,
+      "lineEnd": 0,
+      "text": "// No specific changes could be extracted from agent output",
+      "description": "Unable to extract specific changes"
+    }
+  ],
+  "task": "add tesseract ocr for text extraction, map to pdf document, with traversable class that holds both text and text with pdf metadata",
+  "timestamp": "20250530_124627",
+  "original_file": "/Users/kj/ResumeRebuild/src/gui.py"
+}

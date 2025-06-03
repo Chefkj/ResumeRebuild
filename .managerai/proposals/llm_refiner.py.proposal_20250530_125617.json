@@ -1,0 +1,15 @@
+{
+  "file_path": "/Users/kj/ResumeRebuild/src/utils/llm_refiner.py",
+  "changes": [
+    {
+      "type": "modify",
+      "lineStart": 2,
+      "lineEnd": 22,
+      "text": "def refine(self, file_path):\n    extracted_text = \"\"\n    try:\n        if file_path.lower().endswith(('.png', '.jpg', '.jpeg')):\n            extracted_text = pytesseract.image_to_string(Image.open(file_path))\n        elif file_path.lower().endswith('.pdf'):\n            images = convert_from_path(file_path)\n            for image in images:\n                extracted_text += pytesseract.image_to_string(image)\n        else:\n            with open(file_path, 'r') as f:\n                extracted_text = f.read()\n    except Exception as e:\n        logger.error(f\"Error processing {file_path}: {e}\")\n        extracted_text = \"\"\n    return extracted_text",
+      "description": "Code implementation for def refine(self, file_path):"
+    }
+  ],
+  "task": "add tesseract ocr for text extraction, map to pdf document, with traversable class that holds both text and text with pdf metadata",
+  "timestamp": "20250530_125617",
+  "original_file": "/Users/kj/ResumeRebuild/src/utils/llm_refiner.py"
+}

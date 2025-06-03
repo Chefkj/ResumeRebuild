@@ -1,0 +1,15 @@
+{
+  "file_path": "/Users/kj/ResumeRebuild/test_merged_location_handling.py",
+  "changes": [
+    {
+      "type": "modify",
+      "lineStart": 0,
+      "lineEnd": 0,
+      "text": "// No specific changes could be extracted from agent output",
+      "description": "Unable to extract specific changes"
+    }
+  ],
+  "task": "improve on tesseract ocr solution, it's currently not pulling text out in sequential order.  integrate with extraction pattern library",
+  "timestamp": "20250531_185738",
+  "original_file": "/Users/kj/ResumeRebuild/test_merged_location_handling.py"
+}

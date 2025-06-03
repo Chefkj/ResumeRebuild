@@ -1,0 +1,67 @@
+{
+  "task": "improve on tesseract ocr solution, it's currently not pulling text out in sequential order.  integrate with extraction pattern library",
+  "timestamp": "2025-05-31T17:06:22.793433",
+  "completion_time": 35.51996207237244,
+  "plan": {
+    "task": "improve on tesseract ocr solution, it's currently not pulling text out in sequential order.  integrate with extraction pattern library",
+    "plan": [],
+    "formatted_plan": "No plan elements found.",
+    "has_hierarchical_plan": true,
+    "metadata": {
+      "creation_time": 1.0013580322265625e-05,
+      "timestamp": "2025-05-31 17:05:47",
+      "planner_type": "htn"
+    },
+    "subtasks": [
+      "**Subtask 1: Investigate Tesseract OCR Issues**"
+    ],
+    "generated_by_boy_blue": true
+  },
+  "file_proposals": {
+    ".": {
+      "status": "directory",
+      "processed_files": {
+        "/Users/kj/ResumeRebuild/src/utils/pattern_library.py": {
+          "status": "skipped",
+          "reason": "No relevant subtasks identified"
+        },
+        "/Users/kj/ResumeRebuild/src/utils/ocr_text_extraction.py": {
+          "status": "skipped",
+          "reason": "No relevant subtasks identified"
+        },
+        "/Users/kj/ResumeRebuild/src/utils/pdf_replacer_enhanced.py": {
+          "status": "skipped",
+          "reason": "No relevant subtasks identified"
+        },
+        "/Users/kj/ResumeRebuild/src/utils/pdf_extractor.py": {
+          "status": "skipped",
+          "reason": "No relevant subtasks identified"
+        },
+        "/Users/kj/ResumeRebuild/src/utils/ocr_section_extractor_improved.py": {
+          "status": "skipped",
+          "reason": "No relevant subtasks identified"
+        },
+        "/Users/kj/ResumeRebuild/test_improved_ocr_extraction.py": {
+          "status": "skipped",
+          "reason": "No relevant subtasks identified"
+        },
+        "/Users/kj/ResumeRebuild/src/utils/ocr_section_extractor.py": {
+          "status": "skipped",
+          "reason": "No relevant subtasks identified"
+        },
+        "/Users/kj/ResumeRebuild/src/utils/pdf_replacer.py": {
+          "status": "skipped",
+          "reason": "No relevant subtasks identified"
+        },
+        "/Users/kj/ResumeRebuild/test_merged_location_handling.py": {
+          "status": "skipped",
+          "reason": "No relevant subtasks identified"
+        },
+        "/Users/kj/ResumeRebuild/test_ocr_extraction.py": {
+          "status": "skipped",
+          "reason": "No relevant subtasks identified"
+        }
+      }
+    }
+  }
+}

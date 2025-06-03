@@ -1,6 +1,6 @@
 """
 PDF Extractor module for extracting text and structure from PDF resumes.
-Uses a combination of PyPDF2 and pdfminer.six for more accurate extraction.
+Uses a combination of PyPDF2, pdfminer.six, and Tesseract OCR for more accurate extraction.
 """
 
 import io
@@ -14,6 +14,13 @@ from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
 from pdfminer.pdfpage import PDFPage
 from PyPDF2 import PdfReader
 import subprocess
+import pytesseract
+from pdf2image import convert_from_path
+from PIL import Image
+import logging
+
+# Set up logger
+logger = logging.getLogger(__name__)
 
 class ResumeSection:
     """Class representing a section of a resume."""
@@ -101,7 +108,7 @@ class PDFExtractor:
         raw_text2 = self._extract_with_pypdf2(pdf_path)
         raw_text3 = self._extract_with_layout_analysis(pdf_path)
         
-        # Try with external tools if available
+        # Try with external tools if available (including Tesseract OCR)
         raw_text4 = ""
         try:
             raw_text4 = self._extract_with_external_tools(pdf_path)
@@ -208,7 +215,17 @@ class PDFExtractor:
         """Try extraction with external tools if available (like pdf2text)."""
         text = ""
         
-        # Try using PyMuPDF (fitz) first - it often gives the best results
+        # First try the OCR method - it often gives the best results for headers
+        try:
+            ocr_text = self._extract_with_tesseract_ocr(pdf_path)
+            if ocr_text and len(ocr_text.strip()) > 100:
+                # If OCR returned substantial text, use it
+                print("Using Tesseract OCR for extraction - best for section headers")
+                return ocr_text
+        except Exception as e:
+            print(f"Tesseract OCR extraction error: {e}, falling back to other methods")
+        
+        # Try using PyMuPDF (fitz) next if OCR failed
         try:
             import fitz  # PyMuPDF
             doc = fitz.open(pdf_path)
@@ -216,7 +233,7 @@ class PDFExtractor:
             for page in doc:
                 all_text += page.get_text("text") + "\n\n"
             if all_text.strip():
-                print("Using PyMuPDF for extraction - generally best quality")
+                print("Using PyMuPDF for extraction - generally good quality")
                 return all_text
         except ImportError:
             print("PyMuPDF not available, trying other methods")
@@ -291,187 +308,270 @@ class PDFExtractor:
             pass
             
         return text
-    
-    def _combine_extracted_text(self, text_versions):
+        
+    def _extract_with_tesseract_ocr(self, pdf_path):
         """
-        Combine and clean multiple extracted text versions.
-        Choose the best version or combine them for best results.
+        Extract text from PDF using Tesseract OCR for better header recognition.
+        
+        This method converts PDF pages to images and uses OCR to extract text.
+        It's particularly effective for detecting section headers in resumes
+        that may be embedded within text without proper line breaks.
+        
+        Args:
+            pdf_path: Path to the PDF file
+            
+        Returns:
+            str: Extracted text with proper section header separation
         """
-        # Filter out empty versions
-        valid_versions = [t for t in text_versions if t.strip()]
-        
-        if not valid_versions:
-            return ""
-        
-        # Choose the version with the most content for now
-        # In a more sophisticated version, you could combine them intelligently
-        best_version = max(valid_versions, key=len)
-        
-        # Clean up the text
-        cleaned_text = self._clean_text(best_version)
-        
-        return cleaned_text
-    
-    def _clean_text(self, text):
-        """Clean up extracted text."""
-        # Remove excessive whitespace
-        text = re.sub(r'\n{3,}', '\n\n', text)
-        text = re.sub(r' {2,}', ' ', text)
-        
-        # Fix broken lines
-        text = re.sub(r'(\w)-\n(\w)', r'\1\2', text)
-        
-        # Remove page numbers and headers/footers (simplified)
-        lines = text.split('\n')
-        filtered_lines = []
-        for line in lines:
-            # Skip lines that are just page numbers
-            if re.match(r'^\s*\d+\s*$', line):
-                continue
-            # Skip likely header/footer lines (very short lines at page boundaries)
-            if len(line.strip()) < 5 and len(filtered_lines) > 0 and filtered_lines[-1] == '':
-                continue
-            
-            filtered_lines.append(line)
-        
-        return '\n'.join(filtered_lines)
-    
-    def _extract_contact_info(self, text, resume):
-        """Extract contact information from the text."""
-        # Extract name - assume it's one of the first non-empty lines
-        lines = [line for line in text.split('\n') if line.strip()]
-        name = lines[0].strip() if lines else ""
-        
-        # Look at a few more lines for a better name candidate (if first line looks like a title)
-        if len(lines) > 1 and (len(name) < 5 or name.isupper() or "RESUME" in name.upper()):
-            for i in range(1, min(5, len(lines))):
-                candidate = lines[i].strip()
-                # A name typically has 2+ words and isn't too long
-                if 5 <= len(candidate) <= 40 and len(candidate.split()) >= 2:
-                    name = candidate
-                    break
-        
-        # Find email using regex - look for standard email patterns
-        email_matches = re.findall(r'[\w.+-]+@[\w-]+\.[\w.-]+', text)
-        email = email_matches[0] if email_matches else ""
-        
-        # Find phone using regex - look for various phone formats
-        phone_patterns = [
-            r'(\+\d{1,2}\s?)?(\(\d{3}\)|\d{3})[\s.-]?\d{3}[\s.-]?\d{4}',  # (123) 456-7890
-            r'\d{3}[-.\s]?\d{3}[-.\s]?\d{4}',  # 123-456-7890
-            r'\+\d{1,2}\s\d{3}\s\d{3}\s\d{4}'  # +1 123 456 7890
-        ]
-        
-        phone = ""
-        for pattern in phone_patterns:
-            matches = re.findall(pattern, text)
-            if matches:
-                if isinstance(matches[0], tuple):
-                    # If the match returned groups, combine them
-                    phone = ''.join(filter(None, matches[0]))
-                else:
-                    phone = matches[0]
-                break
-        
-        # Find LinkedIn URL or username
-        linkedin_patterns = [
-            r'linkedin\.com/in/[\w-]+',
-            r'linkedin\.com/profile/[\w-]+'
-        ]
-        
-        linkedin = ""
-        for pattern in linkedin_patterns:
-            matches = re.findall(pattern, text.lower())
-            if matches:
-                linkedin = matches[0]
-                if not linkedin.startswith('http'):
-                    linkedin = 'www.' + linkedin
-                break
-        
-        # Try to find address - look for lines that might contain an address
-        address_patterns = [
-            r'\d+\s+[\w\s]+,\s*[\w\s]+,\s*[A-Z]{2}\s+\d{5}(-\d{4})?',  # 123 Main St, City, ST 12345
-            r'[A-Z][a-z]+,\s*[A-Z]{2}\s+\d{5}',  # City, ST 12345
-            r'\d+\s+[\w\s]+\s+[A-Za-z]+,\s*[A-Z]{2}'  # 123 Street Name City, ST
-        ]
-        
-        address = ""
-        for pattern in address_patterns:
-            matches = re.findall(pattern, text)
-            if matches:
-                address = matches[0]
-                break
-        
-        # Set the contact info
-        resume.set_contact_info(name=name, email=email, phone=phone, linkedin=linkedin, address=address)
-    
-    def _extract_sections(self, text, resume):
-        """Extract sections from the text."""
-        # Compile all section patterns into a single regex
-        section_pattern = '|'.join(f"({pattern})" for pattern in self.section_patterns)
-        
-        # Find all potential section headers
-        headers = list(re.finditer(fr'(?:\n|^)([^\n]*(?:{section_pattern})[^\n]*)\n', text, re.IGNORECASE))
-        
-        if not headers:
-            # If no section headers found, try more aggressive patterns
-            headers = list(re.finditer(r'(?:\n|^)([A-Z][A-Z\s]{2,}:?)(?:\n|$)', text))
-        
-        # If still no headers, look for bold or underlined text that may indicate sections
-        if not headers:
-            # This would require layout analysis that we've already done, so just add a fallback
-            # Look for lines that might be section headers (all caps, short lines)
-            potential_headers = re.finditer(r'\n([A-Z][A-Z\s&]{2,})(?:\n|$)', text)
-            headers = list(potential_headers)
-        
-        section_matches = []
-        for match in headers:
-            section_title = match.group(1).strip()
-            start_pos = match.end()
-            section_matches.append((section_title, start_pos))
-        
-        # Extract content for each section
-        for i, (title, start_pos) in enumerate(section_matches):
-            # Section content goes from start position to the next section or end of text
-            end_pos = section_matches[i+1][1] if i < len(section_matches) - 1 else len(text)
-            content = text[start_pos:end_pos].strip()
-            
-            resume.add_section(title, content)
-        
-        # If no sections found or not enough content extracted, try a different approach
-        if not resume.sections or sum(len(s.content) for s in resume.sections) < len(text) * 0.3:
-            # Look for potential section boundaries (line breaks followed by capitalized text)
-            lines = text.split('\n')
-            current_section = None
-            current_content = []
-            
-            for line in lines:
-                line = line.strip()
-                if not line:
-                    continue
+        try:
+            # Check if Tesseract is installed and available
+            try:
+                pytesseract.get_tesseract_version()
+                logger.info("Tesseract OCR is available.")
+            except Exception as e:
+                logger.warning(f"Tesseract OCR is not properly installed: {e}")
+                return ""
                 
-                # Check if this line looks like a section header
-                if re.match(r'^[A-Z][A-Za-z\s]{2,}$', line) and len(line) < 30:
-                    # If we have a previous section, add it
-                    if current_section:
-                        resume.add_section(current_section, '\n'.join(current_content).strip())
-                    
-                    # Start a new section
-                    current_section = line
-                    current_content = []
-                else:
-                    # Add to current section content
-                    current_content.append(line)
+            # Convert PDF to images
+            logger.info(f"Converting PDF to images: {pdf_path}")
+            images = convert_from_path(pdf_path, dpi=300)  # Higher DPI for better quality
             
-            # Add the last section
-            if current_section and current_content:
-                resume.add_section(current_section, '\n'.join(current_content).strip())
+            if not images:
+                logger.warning("No images extracted from PDF")
+                return ""
+                
+            logger.info(f"Successfully converted {len(images)} pages to images")
+            
+            # Process each page with OCR
+            all_text = []
+            
+            # OCR Configuration for better section header detection
+            custom_config = r'--oem 3 --psm 6 -l eng'  # Page segmentation mode 6: Assume a single uniform block of text
+            
+            for i, img in enumerate(images):
+                logger.info(f"Processing page {i+1} with OCR")
+                
+                # Apply preprocessing to enhance text readability if needed
+                # img = self._preprocess_image_for_ocr(img)  # Uncomment if needed
+                
+                # Extract text using Tesseract
+                page_text = pytesseract.image_to_string(img, config=custom_config)
+                
+                # Post-process the extracted text
+                processed_text = self._post_process_ocr_text(page_text)
+                
+                all_text.append(processed_text)
+            
+            combined_text = "\n\n".join(all_text)
+            
+            # Apply specialized section header detection
+            result = self._enhance_section_headers(combined_text)
+            
+            logger.info("OCR extraction completed successfully")
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error during OCR extraction: {str(e)}")
+            return ""
+            
+    def _post_process_ocr_text(self, text):
+        """
+        Post-process OCR-extracted text to correct common OCR issues.
         
-        # If still no sections found, add the whole text as a single section
-        if not resume.sections:
-            resume.add_section("Resume", text.strip())
+        Args:
+            text: OCR-extracted text
+            
+        Returns:
+            str: Corrected text
+        """
+        if not text:
+            return ""
+            
+        # Remove excessive whitespace while preserving paragraph breaks
+        text = re.sub(r'[ \t]+', ' ', text)  # Replace multiple spaces/tabs with a single space
+            
+        # Handle common resume section headers more aggressively
+        header_patterns = {
+            'SUMMARY': ['SUMMARY', 'PROFESSIONAL SUMMARY', 'CAREER SUMMARY', 'OBJECTIVE', 'PROFILE'],
+            'EXPERIENCE': ['EXPERIENCE', 'WORK EXPERIENCE', 'EMPLOYMENT HISTORY', 'WORK HISTORY', 'PROFESSIONAL EXPERIENCE'],
+            'EDUCATION': ['EDUCATION', 'ACADEMIC BACKGROUND', 'EDUCATIONAL BACKGROUND', 'ACADEMIC QUALIFICATIONS'],
+            'SKILLS': ['SKILLS', 'TECHNICAL SKILLS', 'CORE COMPETENCIES', 'EXPERTISE', 'KEY SKILLS'],
+            'PROJECTS': ['PROJECTS', 'PROJECT EXPERIENCE', 'KEY PROJECTS', 'RELEVANT PROJECTS'],
+            'CERTIFICATIONS': ['CERTIFICATIONS', 'CERTIFICATES', 'PROFESSIONAL CERTIFICATIONS', 'CREDENTIALS'],
+            'AWARDS': ['AWARDS', 'HONORS', 'ACHIEVEMENTS', 'RECOGNITIONS'],
+            'PUBLICATIONS': ['PUBLICATIONS', 'PAPERS', 'RESEARCH', 'ARTICLES'],
+            'LANGUAGES': ['LANGUAGES', 'LANGUAGE SKILLS', 'LANGUAGE PROFICIENCY'],
+            'INTERESTS': ['INTERESTS', 'HOBBIES', 'ACTIVITIES', 'PERSONAL INTERESTS'],
+            'REFERENCES': ['REFERENCES', 'RECOMMENDATIONS', 'PROFESSIONAL REFERENCES']
+        }
         
-        return resume
+        # First, normalize the text to help with pattern matching
+        for standardized, variations in header_patterns.items():
+            for variation in variations:
+                # Replace variations with standardized header name, add proper spacing
+                # Pattern covers: headers stuck to text before or after them
+                pattern = fr'([a-z])({variation})([A-Z]|[a-z])'
+                text = re.sub(pattern, fr'\1\n\n{standardized}\n\n\3', text, flags=re.IGNORECASE)
+                
+                # Pattern for headers at start of line with text immediately after
+                pattern = fr'^({variation})([A-Z]|[a-z])'
+                text = re.sub(pattern, fr'{standardized}\n\n\2', text, flags=re.IGNORECASE)
+                
+                # Pattern for headers in the middle of text
+                pattern = fr'([.!?])(\s+)({variation})(\s+)'
+                text = re.sub(pattern, fr'\1\2\n\n{standardized}\n\n', text, flags=re.IGNORECASE)
+                
+                # Standalone headers - ensure they have proper newlines before/after
+                pattern = fr'(\n|\s)({variation})(\n|\s|:|$)'
+                text = re.sub(pattern, fr'\n\n{standardized}\n\n', text, flags=re.IGNORECASE)
+                
+        # Fix bullet points to ensure they're on new lines
+        text = re.sub(r'([^\n])(\s*[•\-\*])(\s)', r'\1\n\2\3', text)
+        
+        # Clean up excessive newlines and normalize to double newlines between sections
+        text = re.sub(r'\n{3,}', '\n\n', text)
+        
+        # Ensure no orphaned single newlines (make them double or remove)
+        lines = text.split('\n')
+        processed_lines = []
+        
+        i = 0
+        while i < len(lines):
+            line = lines[i].strip()
+            
+            # Skip entirely empty lines
+            if not line:
+                i += 1
+                continue
+                
+            processed_lines.append(line)
+            
+            # Check for section headers to ensure proper spacing
+            is_header = False
+            for header_list in header_patterns.values():
+                if any(re.match(fr'^{re.escape(h)}$', line, re.IGNORECASE) for h in header_list):
+                    is_header = True
+                    break
+                    
+            if is_header and i < len(lines) - 1:
+                # Add an empty line after headers if not already present
+                processed_lines.append('')
+                
+            i += 1
+            
+        return '\n'.join(processed_lines)
+        
+    def _enhance_section_headers(self, text):
+        """
+        Enhance section headers in the extracted text to ensure they're properly separated.
+        
+        Args:
+            text: Extracted text
+            
+        Returns:
+            str: Text with enhanced section headers
+        """
+        if not text:
+            return ""
+            
+        lines = text.split('\n')
+        processed_lines = []
+        
+        # Common resume section headers (case insensitive)
+        header_patterns = [
+            r'^.*\b(EDUCATION|ACADEMIC)\b.*$',
+            r'^.*\b(EXPERIENCE|EMPLOYMENT|WORK\s+HISTORY)\b.*$',
+            r'^.*\b(SKILLS|TECHNICAL\s+SKILLS|EXPERTISE)\b.*$', 
+            r'^.*\b(SUMMARY|PROFILE|OBJECTIVE)\b.*$',
+            r'^.*\b(PROJECTS|PROJECT\s+EXPERIENCE)\b.*$',
+            r'^.*\b(CERTIFICATIONS|CERTIFICATES|CREDENTIALS)\b.*$',
+            r'^.*\b(AWARDS|HONORS|ACHIEVEMENTS)\b.*$',
+            r'^.*\b(PUBLICATIONS|RESEARCH|PAPERS)\b.*$',
+            r'^.*\b(VOLUNTEER|COMMUNITY\s+SERVICE)\b.*$',
+            r'^.*\b(LANGUAGES|LANGUAGE\s+PROFICIENCY)\b.*$',
+            r'^.*\b(INTERESTS|HOBBIES|ACTIVITIES)\b.*$',
+            r'^.*\b(REFERENCES|RECOMMENDATIONS)\b.*$'
+        ]
+        
+        for i, line in enumerate(lines):
+            line_added = False
+            
+            # Check if line matches a section header pattern
+            for pattern in header_patterns:
+                if re.search(pattern, line, re.IGNORECASE):
+                    # If previous line wasn't empty, add an empty line before header
+                    if processed_lines and processed_lines[-1].strip():
+                        processed_lines.append('')
+                    
+                    # Add the header line
+                    processed_lines.append(line.strip())
+                    
+                    # Add empty line after header if next line isn't empty
+                    if i+1 < len(lines) and lines[i+1].strip():
+                        processed_lines.append('')
+                        
+                    line_added = True
+                    break
+            
+            if not line_added:
+                processed_lines.append(line)
+        
+        return '\n'.join(processed_lines)
+    
+    def _combine_extracted_text(self, texts):
+        """
+        Combine text extracted using different methods, prioritizing higher quality extractions.
+        
+        Args:
+            texts: List of extracted texts from different methods
+            
+        Returns:
+            str: Combined text
+        """
+        # Filter out empty texts
+        texts = [t for t in texts if t and len(t.strip()) > 0]
+        
+        if not texts:
+            return ""
+            
+        # Use OCR text if available (usually the best for section headers)
+        if texts[3] and len(texts[3]) > 200:  # text4 is from Tesseract OCR
+            return texts[3]
+        
+        # Compare extraction quality of the different methods
+        # Simple heuristic: longer content and more line breaks often means better extraction
+        scores = []
+        
+        for text in texts:
+            # Calculate score based on:
+            # 1. Length of text (after normalization)
+            # 2. Number of proper newlines (indicating paragraph breaks)
+            # 3. Presence of section header keywords
+            
+            score = 0
+            
+            # Score for length (normalized to avoid extremely long garbage text)
+            score += min(len(text) / 1000, 10)  # Cap at 10 points
+            
+            # Score for proper newlines and paragraphs (indicating structure)
+            paragraphs = text.split('\n\n')
+            score += min(len(paragraphs) / 5, 5)  # Cap at 5 points
+            
+            # Score for section headers (common in resumes)
+            section_headers = [
+                'education', 'experience', 'skills', 'summary', 'profile',
+                'certifications', 'projects', 'publications'
+            ]
+            
+            for header in section_headers:
+                if re.search(r'\b' + header + r'\b', text.lower()):
+                    score += 1
+            
+            scores.append(score)
+        
+        # Use the text with the highest score
+        best_idx = scores.index(max(scores))
+        return texts[best_idx]
     
     def install_pdftotext_guide():
         """
@@ -509,3 +609,65 @@ class PDFExtractor:
                 "   sudo pacman -S poppler\n\n"
                 "Restart the application after installation."
             )
+    
+    def _extract_contact_info(self, text, resume):
+        """Extract contact information from the resume text."""
+        # Extract email addresses
+        email_pattern = r'[\w.+-]+@[\w-]+\.[\w.-]+'
+        emails = re.findall(email_pattern, text)
+        
+        # Extract phone numbers
+        phone_pattern = r'(\+\d{1,3}[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}'
+        phones = re.findall(phone_pattern, text)
+        
+        # Extract LinkedIn URLs
+        linkedin_pattern = r'(linkedin\.com/in/[^\s]+)'
+        linkedin = re.findall(linkedin_pattern, text, re.IGNORECASE)
+        
+        # Simple name extraction - look for lines with just names at the beginning
+        lines = text.split('\n')
+        name = ""
+        for i in range(min(5, len(lines))):  # Check first 5 lines
+            line = lines[i].strip()
+            # Names are usually short, all letters, no numbers
+            if len(line) > 0 and len(line.split()) <= 4 and not re.search(r'\d', line):
+                name = line
+                break
+        
+        # Set the contact info
+        resume.set_contact_info(
+            name=name,
+            email=emails[0] if emails else "",
+            phone=phones[0] if phones else "",
+            linkedin=linkedin[0] if linkedin else ""
+        )
+    
+    def _extract_sections(self, text, resume):
+        """Extract sections from the resume text."""
+        # Simple section extraction based on regex patterns
+        section_text = text
+        
+        # Try to find sections based on common patterns
+        for pattern in self.section_patterns:
+            # Look for the pattern in the text
+            matches = list(re.finditer(rf'\b({pattern})\b', section_text, re.IGNORECASE))
+            
+            # Process each match
+            for i, match in enumerate(matches):
+                section_name = match.group(1).upper()
+                
+                # Determine the start of the section content
+                start = match.end()
+                
+                # Determine the end of the section content (next section or end of text)
+                if i < len(matches) - 1:
+                    end = matches[i+1].start()
+                else:
+                    end = len(section_text)
+                
+                # Extract the section content
+                section_content = section_text[start:end].strip()
+                
+                # Add the section to the resume
+                if section_content and len(section_content) > 10:  # Minimum content length
+                    resume.add_section(section_name, section_content)

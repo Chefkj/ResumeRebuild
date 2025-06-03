@@ -1,0 +1,29 @@
+{
+  "file_path": "/Users/kj/ResumeRebuild/src/utils/section_extractor.py",
+  "changes": [
+    {
+      "type": "modify",
+      "lineStart": 2,
+      "lineEnd": 22,
+      "text": "def _normalize_text(self, text):\n    \"\"\"Normalize text by removing special characters and whitespace.\"\"\"\n    # Normalize text by removing special characters and extra whitespace.\n    return re.sub(r'[^a-zA-Z0-9\\s]', '', text)",
+      "description": "Code implementation for def _normalize_text(self, text):"
+    },
+    {
+      "type": "modify",
+      "lineStart": 2,
+      "lineEnd": 22,
+      "text": "def _normalize_text(self, text):\n    r\"\"\"Normalize text by removing special characters and whitespace.\n    \n    Args:\n        text (str): The input text to normalize.\n        \n    Returns:\n        str: The normalized text.\n    \"\"\"\n    if text is None:\n        return \"\"\n    # Remove non-alphanumeric and non-whitespace characters\n    cleaned = re.sub(r'[^a-zA-Z0-9\\s]', '', text)\n    # Also, collapse multiple whitespace into a single space\n    cleaned = re.sub(r'\\s+', ' ', cleaned).strip()\n    return cleaned",
+      "description": "Code implementation for def _normalize_text(self, text):"
+    },
+    {
+      "type": "modify",
+      "lineStart": 2,
+      "lineEnd": 22,
+      "text": "def _normalize_text(self, text):\n    r\"\"\"Normalize text by removing special characters and whitespace.\"\"\"\n    try:\n        if text is None:\n            return \"\"\n        # Remove non-alphanumeric and non-whitespace characters\n        cleaned = re.sub(r'[^a-zA-Z0-9\\s]', '', text)\n        # Also, collapse multiple whitespace into a single space\n        cleaned = re.sub(r'\\s+', ' ', cleaned).strip()\n        return cleaned\n    except Exception as e:\n        logger.error(f\"Error normalizing text: {e}\")\n        return text  # Return original or empty?\n        # Or maybe return an empty string?",
+      "description": "Code implementation for def _normalize_text(self, text):"
+    }
+  ],
+  "task": "Better Date Pattern Handling:\n\nInstead of using test-specific cases, develop more robust regex patterns that can handle all date format variations\nImplement more general date normalization functions that work with real-world resume text\nPattern Optimization:\n\nFurther optimize pattern matching to reduce processing time\nGroup related patterns together for more efficient processing\nUniversal Pattern Library:\n\nMove pattern definitions to a dedicated configuration file\nCreate a pattern library that can be easily updated and maintained\nTest Coverage Expansion:\n\nAdd more real-world test cases from different resume formats\nImplement property-based testing for validating pattern fixes\nPerformance Profiling:\n\nMeasure the impact of each pattern fix on processing time\nIdentify and optimize patterns with the highest performance impact",
+  "timestamp": "20250531_122456",
+  "original_file": "/Users/kj/ResumeRebuild/src/utils/section_extractor.py"
+}
