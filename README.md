@@ -71,6 +71,11 @@ You can also manually manage the server using the `manage_api_server.py` script:
 
 The application is configured to use the following default settings:
 
+- Server: `http://localhost:8080`
+- API Key: Environment variable `RESUME_API_KEY` or default test key
+
+You can change these settings in the application's settings panel or by setting environment variables in the `.env` file. For detailed instructions on configuring API keys for job search and other features, see the [API Configuration Guide](docs/api_configuration.md).
+
 ## OCR Text Extraction Improvements
 
 The Resume Rebuilder includes enhanced OCR-based text extraction from PDF resumes, with the following improvements:

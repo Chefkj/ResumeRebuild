@@ -7,6 +7,7 @@ import json
 import requests
 from urllib.parse import urljoin
 import logging
+from src.utils.env_loader import get_api_key, get_setting
 
 # Set up logging
 logging.basicConfig(level=logging.INFO,
@@ -24,12 +25,16 @@ class APIClient:
             base_url: Base URL for the API endpoints
             api_key: API key for authentication
         """
-        self.base_url = base_url or os.environ.get("RESUME_API_BASE_URL", "http://localhost:8080/")
-        self.api_key = api_key or os.environ.get("RESUME_API_KEY", "")
+        self.base_url = base_url or get_setting("RESUME_API_URL", "http://localhost:8080/")
+        self.api_key = api_key or get_api_key("RESUME_API_KEY", "")
         
         # Ensure base_url ends with a slash
         if not self.base_url.endswith('/'):
             self.base_url += '/'
+        
+        logger.info(f"Initialized API client with base URL: {self.base_url}")
+        if not self.api_key:
+            logger.warning("No API key provided. Some endpoints may require authentication.")
     
     def _make_request(self, method, endpoint, data=None, params=None, files=None, timeout=30):
         """

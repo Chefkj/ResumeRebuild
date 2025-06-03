@@ -10,6 +10,7 @@ import logging
 from pathlib import Path
 from enum import Enum
 from typing import Dict, Any, Optional
+from src.utils.env_loader import load_env_vars, get_api_key, get_setting
 
 # Set up logging
 logging.basicConfig(level=logging.INFO,
@@ -67,20 +68,50 @@ class Settings:
     def _load_settings(self) -> Dict[str, Any]:
         """Load settings from file or create default."""
         try:
+            # First load defaults
+            merged_settings = self.DEFAULT_SETTINGS.copy()
+            
+            # Load from settings file if it exists
             if self.settings_file.exists():
                 with open(self.settings_file, 'r') as f:
                     settings = json.load(f)
                 logger.info(f"Loaded settings from {self.settings_file}")
                 
                 # Merge with defaults to ensure all settings exist
-                merged_settings = self.DEFAULT_SETTINGS.copy()
                 for category, values in settings.items():
                     if category in merged_settings:
                         merged_settings[category].update(values)
+            
+            # Now override with any environment variables
+            # Load environment variables
+            load_env_vars()
+            
+            # API Settings
+            merged_settings["api"]["backend"] = get_setting("API_BACKEND", merged_settings["api"]["backend"])
+            merged_settings["api"]["manageai_url"] = get_setting("RESUME_API_URL", merged_settings["api"]["manageai_url"])
+            merged_settings["api"]["api_key"] = get_api_key("RESUME_API_KEY", merged_settings["api"]["api_key"])
+            merged_settings["api"]["llm_host"] = get_setting("LLM_STUDIO_HOST", merged_settings["api"]["llm_host"])
+            merged_settings["api"]["llm_port"] = int(get_setting("LLM_STUDIO_PORT", merged_settings["api"]["llm_port"]))
+            merged_settings["api"]["llm_model"] = get_setting("LLM_STUDIO_MODEL", merged_settings["api"]["llm_model"])
+            
+            # Job Search API keys
+            if "job_search" not in merged_settings:
+                merged_settings["job_search"] = {}
                 
-                return merged_settings
-            else:
-                return self.DEFAULT_SETTINGS.copy()
+            merged_settings["job_search"]["linkedin_api_key"] = get_api_key("LINKEDIN_API_KEY", "")
+            merged_settings["job_search"]["indeed_api_key"] = get_api_key("INDEED_API_KEY", "")
+            merged_settings["job_search"]["glassdoor_api_key"] = get_api_key("GLASSDOOR_API_KEY", "")
+            merged_settings["job_search"]["monster_api_key"] = get_api_key("MONSTER_API_KEY", "")
+            
+            # ATS API keys
+            if "ats" not in merged_settings:
+                merged_settings["ats"] = {}
+                
+            merged_settings["ats"]["lever_api_key"] = get_api_key("LEVER_API_KEY", "")
+            merged_settings["ats"]["greenhouse_api_key"] = get_api_key("GREENHOUSE_API_KEY", "")
+            merged_settings["ats"]["workday_api_key"] = get_api_key("WORKDAY_API_KEY", "")
+            
+            return merged_settings
         except Exception as e:
             logger.error(f"Error loading settings: {e}")
             return self.DEFAULT_SETTINGS.copy()
