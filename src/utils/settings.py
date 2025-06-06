@@ -100,7 +100,7 @@ class Settings:
                 
             merged_settings["job_search"]["linkedin_api_key"] = get_api_key("LINKEDIN_API_KEY", "")
             merged_settings["job_search"]["indeed_api_key"] = get_api_key("INDEED_API_KEY", "")
-            merged_settings["job_search"]["glassdoor_api_key"] = get_api_key("GLASSDOOR_API_KEY", "")
+            merged_settings["job_search"]["ziprecruiter_api_key"] = get_api_key("ZIPRECRUITER_API_KEY", "")
             merged_settings["job_search"]["monster_api_key"] = get_api_key("MONSTER_API_KEY", "")
             
             # ATS API keys

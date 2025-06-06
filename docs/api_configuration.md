@@ -13,8 +13,9 @@ The application can integrate with the following services:
 ### Job Search APIs
 - **LinkedIn** - Search for jobs on LinkedIn
 - **Indeed** - Search for jobs on Indeed
-- **Glassdoor** - Search for jobs on Glassdoor
+- **ZipRecruiter** - Search for jobs on ZipRecruiter
 - **Monster** - Search for jobs on Monster
+- **Glassdoor** - Search for jobs on Glassdoor (using web scraping)
 
 ### Applicant Tracking System (ATS) APIs
 - **Lever** - Submit applications through Lever ATS
@@ -42,8 +43,13 @@ RESUME_API_URL=http://localhost:8080
 # Job Search APIs
 LINKEDIN_API_KEY=your_linkedin_api_key
 INDEED_API_KEY=your_indeed_api_key
-GLASSDOOR_API_KEY=your_glassdoor_api_key
+ZIPRECRUITER_API_KEY=your_ziprecruiter_api_key
 MONSTER_API_KEY=your_monster_api_key
+
+# Web Scraping Credentials
+GLASSDOOR_USERNAME=your_glassdoor_email
+GLASSDOOR_PASSWORD=your_glassdoor_password
+HEADLESS_BROWSER=true
 
 # ATS System APIs
 LEVER_API_KEY=your_lever_api_key
@@ -100,8 +106,9 @@ For information on obtaining API keys for the various services:
 
 - **LinkedIn API**: Visit the [LinkedIn Developer Portal](https://developer.linkedin.com/)
 - **Indeed API**: Visit the [Indeed Publisher Portal](https://developers.indeed.com/)
-- **Glassdoor API**: Visit the [Glassdoor Developer Portal](https://www.glassdoor.com/developer/)
+- **ZipRecruiter API**: Visit the [ZipRecruiter Developer Portal](https://www.ziprecruiter.com/developers)
 - **Monster API**: Contact Monster for API access
+- **Glassdoor**: Create a regular user account at [Glassdoor](https://www.glassdoor.com)
 - **Lever API**: Contact your Lever administrator
 - **Greenhouse API**: Contact your Greenhouse administrator
 - **Workday API**: Contact your Workday administrator

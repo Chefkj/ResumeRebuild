@@ -11,6 +11,8 @@ import json
 from typing import Dict, List, Any, Optional, Union
 from src.utils.env_loader import get_api_key, get_setting
 from src.utils.settings import Settings
+from src.utils.glassdoor_scraper import glassdoor_scraper
+from src.utils.agents_glassdoor import glassdoor_agent_s
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -28,8 +30,12 @@ class JobSearchAPIClient:
         # Get job search API keys
         self.linkedin_api_key = self.settings.settings.get('job_search', {}).get('linkedin_api_key', '')
         self.indeed_api_key = self.settings.settings.get('job_search', {}).get('indeed_api_key', '')
-        self.glassdoor_api_key = self.settings.settings.get('job_search', {}).get('glassdoor_api_key', '')
+        self.ziprecruiter_api_key = self.settings.settings.get('job_search', {}).get('ziprecruiter_api_key', '')
         self.monster_api_key = self.settings.settings.get('job_search', {}).get('monster_api_key', '')
+        
+        # Get web scraping credentials
+        self.glassdoor_username = get_setting("GLASSDOOR_USERNAME", "")
+        self.glassdoor_password = get_setting("GLASSDOOR_PASSWORD", "")
         
         # Log available APIs
         available_apis = []
@@ -37,10 +43,12 @@ class JobSearchAPIClient:
             available_apis.append('LinkedIn')
         if self.indeed_api_key:
             available_apis.append('Indeed')
-        if self.glassdoor_api_key:
-            available_apis.append('Glassdoor')
+        if self.ziprecruiter_api_key:
+            available_apis.append('ZipRecruiter')
         if self.monster_api_key:
             available_apis.append('Monster')
+        if self.glassdoor_username and self.glassdoor_password:
+            available_apis.append('Glassdoor (Scraper)')
             
         if available_apis:
             logger.info(f"Available job search APIs: {', '.join(available_apis)}")
@@ -150,12 +158,12 @@ class JobSearchAPIClient:
             logger.error(f"Error searching Indeed: {e}")
             return []
             
-    def search_glassdoor(self, 
+    def search_ziprecruiter(self, 
                         query: str, 
                         location: Optional[str] = None,
                         limit: int = 10) -> List[Dict[str, Any]]:
         """
-        Search for jobs on Glassdoor.
+        Search for jobs on ZipRecruiter.
         
         Args:
             query: Job search query
@@ -165,29 +173,42 @@ class JobSearchAPIClient:
         Returns:
             List of job postings
         """
-        if not self.glassdoor_api_key:
-            logger.error("Glassdoor API key not configured")
+        if not self.ziprecruiter_api_key:
+            logger.error("ZipRecruiter API key not configured")
             return []
             
         try:
-            # Example implementation - replace with actual Glassdoor API endpoints
-            logger.info(f"Searching Glassdoor for '{query}' in '{location or 'any location'}'")
-            logger.warning("Glassdoor API integration is a placeholder - implement actual API calls")
+            # Example implementation - replace with actual ZipRecruiter API endpoints
+            # ZipRecruiter API documentation: https://www.ziprecruiter.com/developers
+            url = "https://api.ziprecruiter.com/jobs/v1"
+            headers = {
+                "Authorization": f"Bearer {self.ziprecruiter_api_key}",
+                "Content-Type": "application/json"
+            }
+            params = {
+                "search": query,
+                "location": location or "",
+                "page": 1,
+                "jobs_per_page": limit
+            }
+            
+            logger.info(f"Searching ZipRecruiter for '{query}' in '{location or 'any location'}'")
+            logger.warning("ZipRecruiter API integration is a placeholder - implement actual API calls")
             
             # Mocked response for development/testing
             return [
                 {
-                    "id": "glassdoor-job-1",
+                    "id": "ziprecruiter-job-1",
                     "title": f"{query} Specialist",
                     "company": "Test Company",
                     "location": location or "Remote",
-                    "url": "https://glassdoor.com/job/123456",
+                    "url": "https://ziprecruiter.com/job/123456",
                     "description": f"Join our team as a {query} specialist...",
-                    "source": "Glassdoor"
+                    "source": "ZipRecruiter"
                 }
             ]
         except Exception as e:
-            logger.error(f"Error searching Glassdoor: {e}")
+            logger.error(f"Error searching ZipRecruiter: {e}")
             return []
     
     def search_monster(self, 
@@ -230,6 +251,32 @@ class JobSearchAPIClient:
             logger.error(f"Error searching Monster: {e}")
             return []
     
+    def search_glassdoor(self, 
+                        query: str, 
+                        location: Optional[str] = None,
+                        limit: int = 10) -> List[Dict[str, Any]]:
+        """
+        Search for jobs on Glassdoor using web scraping.
+        
+        Args:
+            query: Job search query
+            location: Optional location filter
+            limit: Maximum number of results to return
+            
+        Returns:
+            List of job postings
+        """
+        if not self.glassdoor_username or not self.glassdoor_password:
+            logger.warning("Glassdoor credentials not configured. Set GLASSDOOR_USERNAME and GLASSDOOR_PASSWORD in your .env file.")
+            return []
+            
+        try:
+            logger.info(f"Searching Glassdoor for '{query}' in '{location or 'any location'}'")
+            return glassdoor_scraper.search_jobs(query, location, limit)
+        except Exception as e:
+            logger.error(f"Error searching Glassdoor: {e}")
+            return []
+    
     def search_all_apis(self, 
                        query: str, 
                        location: Optional[str] = None,
@@ -257,8 +304,13 @@ class JobSearchAPIClient:
             indeed_results = self.search_indeed(query, location, limit)
             all_results.extend(indeed_results)
             
-        # Glassdoor search
-        if self.glassdoor_api_key:
+        # ZipRecruiter search
+        if self.ziprecruiter_api_key:
+            ziprecruiter_results = self.search_ziprecruiter(query, location, limit)
+            all_results.extend(ziprecruiter_results)
+            
+        # Glassdoor search (web scraping)
+        if self.glassdoor_username and self.glassdoor_password:
             glassdoor_results = self.search_glassdoor(query, location, limit)
             all_results.extend(glassdoor_results)
             

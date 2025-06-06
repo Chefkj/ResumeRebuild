@@ -33,7 +33,7 @@ def parse_arguments():
     
     # Optional arguments
     parser.add_argument('-l', '--location', help='Job location (e.g. "San Francisco" or "Remote")')
-    parser.add_argument('-s', '--sources', help='Comma-separated list of job sources (linkedin,indeed,glassdoor,monster)', default='all')
+    parser.add_argument('-s', '--sources', help='Comma-separated list of job sources (linkedin,indeed,ziprecruiter,glassdoor,monster)', default='all')
     parser.add_argument('-n', '--limit', type=int, help='Maximum number of results per source', default=5)
     parser.add_argument('-o', '--output', help='Output file path')
     parser.add_argument('-f', '--format', choices=['text', 'json'], help='Output format', default='text')
@@ -106,6 +106,9 @@ def main():
                 all_jobs.extend(jobs)
             elif source == 'indeed':
                 jobs = job_search_client.search_indeed(args.query, args.location, args.limit)
+                all_jobs.extend(jobs)
+            elif source == 'ziprecruiter':
+                jobs = job_search_client.search_ziprecruiter(args.query, args.location, args.limit)
                 all_jobs.extend(jobs)
             elif source == 'glassdoor':
                 jobs = job_search_client.search_glassdoor(args.query, args.location, args.limit)

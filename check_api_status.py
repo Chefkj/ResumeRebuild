@@ -14,7 +14,7 @@ from tabulate import tabulate
 # Add the project root directory to Python path
 sys.path.append(str(Path(__file__).resolve().parent))
 
-from src.utils.env_loader import load_env_vars, get_api_key
+from src.utils.env_loader import load_env_vars, get_api_key, get_setting
 from src.utils.settings import Settings
 
 # Configure logging
@@ -54,8 +54,16 @@ def main():
         # Job search APIs
         ("LinkedIn API", get_api_key("LINKEDIN_API_KEY")),
         ("Indeed API", get_api_key("INDEED_API_KEY")),
-        ("Glassdoor API", get_api_key("GLASSDOOR_API_KEY")),
+        ("ZipRecruiter API", get_api_key("ZIPRECRUITER_API_KEY")),
         ("Monster API", get_api_key("MONSTER_API_KEY")),
+        
+        # Web scraping credentials
+        ("Glassdoor Username", get_setting("GLASSDOOR_USERNAME")),
+        ("Glassdoor Password", get_setting("GLASSDOOR_PASSWORD", "********") != "" and "********" or ""),
+        
+        # Web scraping credentials
+        ("Glassdoor Username", get_setting("GLASSDOOR_USERNAME")),
+        ("Glassdoor Password", get_setting("GLASSDOOR_PASSWORD", "********") != "" and "********" or ""),
         
         # ATS APIs
         ("Lever API", get_api_key("LEVER_API_KEY")),
@@ -105,5 +113,23 @@ def main():
     print("\nExample:")
     print("LINKEDIN_API_KEY=your_actual_api_key_here")
 
+def check_scraping_dependencies():
+    """Check if required dependencies for web scraping are installed."""
+    try:
+        import selenium
+        import webdriver_manager
+        import bs4
+        print("\nWeb Scraping Dependencies:")
+        print("✅ Selenium: Installed")
+        print("✅ Webdriver Manager: Installed")
+        print("✅ BeautifulSoup: Installed")
+        return True
+    except ImportError as e:
+        print("\nWeb Scraping Dependencies:")
+        print(f"❌ Missing dependency: {e.name}")
+        print("Please install the required dependencies with: pip install -r requirements.txt")
+        return False
+
 if __name__ == "__main__":
     main()
+    check_scraping_dependencies()
