@@ -941,6 +941,9 @@ class OCRTextExtractor:
         # Apply any remaining patterns in the general category
         text = self.pattern_library.apply_category(text, "general")
         
+        # Apply enhanced OCR corrections for common recognition errors
+        text = self._apply_enhanced_ocr_corrections(text)
+        
         # Words that should not be treated as separate sections
         non_section_words = ['RESUME', 'CV', 'CURRICULUM VITAE', 'NAME', 'PAGE', 'EMAIL']
         
@@ -1039,6 +1042,155 @@ class OCRTextExtractor:
         
         return text
     
+    def _apply_enhanced_ocr_corrections(self, text):
+        """
+        Apply enhanced OCR corrections for common recognition errors
+        
+        Args:
+            text: Text to correct
+            
+        Returns:
+            str: Text with enhanced corrections applied
+        """
+        # Known problematic words and their corrections
+        known_corrections = {
+            "ciplomacy": "diplomacy",
+            "Ciplomacy": "Diplomacy",
+            "CIPLOMACY": "DIPLOMACY",
+            "villereek": "millcreek",
+            "Villereek": "Millcreek",
+            "VILLEREEK": "MILLCREEK",
+            "cornpany": "company",
+            "comrnittee": "committee", 
+            "rnanagement": "management",
+            "cornmunication": "communication",
+            "rnanufacturing": "manufacturing",
+            "rnarketing": "marketing",
+            "developrnent": "development",
+            "environrnent": "environment",
+            "Environrnent": "Environment",
+            "requirernents": "requirements",
+            "achievernent": "achievement",
+            "irnplementation": "implementation",
+            "Irnplementation": "Implementation",
+            "docurnent": "document",
+            "rnonitoring": "monitoring",
+            "prornotion": "promotion",
+            "recomrnendation": "recommendation",
+            "Recomrnendation": "Recommendation",
+            # Additional common corrections
+            "departrnent": "department",
+            "rnanager": "manager",
+        }
+        
+        corrected_text = text
+        
+        # Apply word-level corrections
+        for wrong_word, correct_word in known_corrections.items():
+            # Use word boundaries to avoid partial replacements
+            corrected_text = re.sub(r'\b' + re.escape(wrong_word) + r'\b', correct_word, corrected_text)
+        
+        # Apply pattern-based corrections for URLs, phone numbers, emails
+        corrected_text = self._apply_pattern_corrections(corrected_text)
+        
+        return corrected_text
+    
+    def _apply_pattern_corrections(self, text):
+        """
+        Apply pattern-based corrections for URLs, phone numbers, emails, and other structured data
+        
+        Args:
+            text: Text to correct
+            
+        Returns:
+            str: Text with pattern corrections applied
+        """
+        corrected_text = text
+        
+        # Fix URL patterns - common OCR errors in URLs
+        url_fixes = [
+            (r'\bhttos://', 'https://'),
+            (r'\bhftp://', 'http://'),
+            (r'\bwwvv\.', 'www.'),
+            (r'\bgithub\.corn/', 'github.com/'),
+            (r'\bgmail\.corn\b', 'gmail.com'),
+            (r'\byahoo\.corn\b', 'yahoo.com'),
+            (r'\boutlook\.corn\b', 'outlook.com'),
+            (r'\blinkedin\.corn/', 'linkedin.com/'),
+            (r'\bspoti\.fi([0-9a-zA-Z]+)', r'spoti.fi/\1'),
+            (r'\.corn\b', '.com'),  # General .corn -> .com fix
+        ]
+        
+        for pattern, replacement in url_fixes:
+            corrected_text = re.sub(pattern, replacement, corrected_text, flags=re.IGNORECASE)
+        
+        # Fix phone number patterns - remove common OCR artifacts
+        phone_fixes = [
+            # Remove JJ, JJR patterns often found near phone numbers
+            (r'\b(JJ|JJR)\s*(\d{3}[-\s]*\d{3}[-\s]*\d{4})', r'\2'),
+            (r'(\d{3}[-\s]*\d{3}[-\s]*\d{4})\s*(JJ|JJR)\b', r'\1'),
+            # Clean up standalone JJ/JJR artifacts
+            (r'\bJJ\s+R\b', ''),
+            (r'\bJJR\b', ''),
+            (r'\bJJ\b', ''),
+        ]
+        
+        for pattern, replacement in phone_fixes:
+            corrected_text = re.sub(pattern, replacement, corrected_text)
+        
+        # Fix email patterns
+        email_fixes = [
+            (r'@gmail\.corn\b', '@gmail.com'),
+            (r'@yahoo\.corn\b', '@yahoo.com'),
+            (r'@outlook\.corn\b', '@outlook.com'),
+            (r'@hotmail\.corn\b', '@hotmail.com'),
+        ]
+        
+        for pattern, replacement in email_fixes:
+            corrected_text = re.sub(pattern, replacement, corrected_text, flags=re.IGNORECASE)
+        
+        # Fix common word separations caused by OCR
+        word_separation_fixes = [
+            # Fix separated words
+            (r'\b([Cc])orn pany\b', r'\1ompany'),
+            (r'\b([Mm])anage ment\b', r'\1anagement'),
+            (r'\b([Dd])evelop ment\b', r'\1evelopment'),
+            (r'\b([Ee])nviron ment\b', r'\1nvironment'),
+            (r'\b([Ii])mple mentation\b', r'\1mplementation'),
+            (r'\b([Rr])equire ments\b', r'\1equirements'),
+            (r'\b([Aa])chieve ment\b', r'\1chievement'),
+        ]
+        
+        for pattern, replacement in word_separation_fixes:
+            corrected_text = re.sub(pattern, replacement, corrected_text)
+        
+        # Fix common 'rn' -> 'm' substitutions in context
+        rn_to_m_words = [
+            'cornpany', 'comrnittee', 'rnanagement', 'cornmunication', 
+            'rnanufacturing', 'rnarketing', 'developrnent', 'environrnent',
+            'requirernents', 'achievernent', 'irnplementation', 'docurnent',
+            'rnonitoring', 'prornotion', 'recomrnendation'
+        ]
+        
+        for wrong_word in rn_to_m_words:
+            correct_word = wrong_word.replace('rn', 'm')
+            # Apply with different capitalizations
+            patterns = [
+                (r'\b' + re.escape(wrong_word) + r'\b', correct_word),
+                (r'\b' + re.escape(wrong_word.capitalize()) + r'\b', correct_word.capitalize()),
+                (r'\b' + re.escape(wrong_word.upper()) + r'\b', correct_word.upper()),
+            ]
+            
+            for pattern, replacement in patterns:
+                corrected_text = re.sub(pattern, replacement, corrected_text)
+        
+        # Clean up extra spaces and normalize whitespace
+        corrected_text = re.sub(r'\s+', ' ', corrected_text)
+        corrected_text = re.sub(r'\n\s+', '\n', corrected_text)
+        corrected_text = re.sub(r'\s+\n', '\n', corrected_text)
+        
+        return corrected_text
+
     def _extract_block_positions(self, img, config=None):
         """
         Extract text block positions from an image using Tesseract.

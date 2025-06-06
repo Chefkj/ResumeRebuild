@@ -1,6 +1,10 @@
 # OCR Improvement Guide
 
-This guide explains how to use the OCR improvement scripts to fix problematic word recognition issues in PDF documents.
+This guide explains how to use the enhanced OCR improvement system to fix problematic word recognition issues in PDF documents.
+
+## Enhanced OCR Improvements
+
+The OCR improvement system now includes comprehensive accuracy enhancements through multiple processing methods and advanced post-processing corrections.
 
 ## Targeted OCR Improvement
 
@@ -8,21 +12,33 @@ The targeted OCR improvement script (`targeted_ocr_improvement.py`) addresses sp
 
 ### How It Works
 
-The script uses several specialized techniques:
+The enhanced script now uses several specialized techniques:
 
-1. **Multiple OCR Processing Methods**: Applies 6 different OCR approaches to each page:
+1. **Multiple OCR Processing Methods**: Applies 7 different OCR approaches to each page:
    - Traditional OCR with contrast/sharpness enhancement
    - Enhanced contrast processing for better character distinction
    - Multi-scale processing (normal, enlarged, reduced)
    - Character-focused processing with specialized filters
    - Threshold-based processing for better character separation
    - Location-specific processing optimized for address fields
+   - **NEW**: Enhanced preprocessing with advanced noise reduction and adaptive thresholding
 
 2. **Enhanced Consensus Approach**: Combines results from different processing methods using a sophisticated case-insensitive word-level voting mechanism to select the most likely correct text, with special handling for known problematic words.
 
-3. **Known Word Correction**: Applies specific corrections for known problematic words.
+3. **Expanded Known Word Correction**: Applies specific corrections for a comprehensive set of problematic words including:
+   - Common OCR substitution errors (rn→m patterns)
+   - URL and protocol fixes (httos→https, corn→com)
+   - Phone number artifacts (JJ, JJR patterns)
+   - Word separation issues
 
-4. **Specialized Location Recognition**: Uses pattern matching to detect and correct location fields that often contain problematic city names.
+4. **Pattern-Based Post-Processing**: Uses advanced pattern recognition to correct:
+   - URLs and web addresses
+   - Email addresses  
+   - Phone numbers
+   - Common word separations
+   - Character substitutions in context
+
+5. **Specialized Location Recognition**: Uses pattern matching to detect and correct location fields that often contain problematic city names.
 
 ### Usage
 
@@ -58,32 +74,95 @@ known_problem_words = {
     "ciplomacy": "diplomacy",
     "villereek": "millcreek",
     "cornpany": "company",
+    "comrnittee": "committee", 
+    "rnanagement": "management",
+    "cornmunication": "communication",
+    "rnanufacturing": "manufacturing",
+    "rnarketing": "marketing",
+    "developrnent": "development",
+    "environrnent": "environment",
+    "requirernents": "requirements",
+    "achievernent": "achievement",
+    "irnplementation": "implementation",
+    "docurnent": "document",
+    "rnonitoring": "monitoring",
+    "prornotion": "promotion",
+    "recomrnendation": "recommendation",
+    # URL and protocol fixes
+    "httos": "https",
+    "hftp": "http",
+    "wwvv": "www",
     # Add your new problematic words here
     "misrecognized": "correct",
 }
 ```
 
-You can also add character confusion patterns to the `char_confusions` dictionary:
+You can also add character confusion patterns to the expanded `char_confusions` dictionary:
 
 ```python
 self.char_confusions = {
     'C': ['d', 'D'],  # For "Ciplomacy" -> "diplomacy"
     'v': ['m'],       # For "villereek" -> "millcreek"
-    'rn': ['m'],      # For "cornpany" -> "company"
+    'rn': ['m'],      # Common OCR confusion "rn" -> "m"
+    'cl': ['d'],      # For "clifficulty" -> "difficulty"
+    'cI': ['d'],      # Capital I confusion
+    'li': ['d'],      # For "lifficulty" -> "difficulty"
+    'ij': ['y'],      # For "identifij" -> "identify"
+    'tl': ['d'],      # For "studient" -> "student"
+    'fi': ['f'],      # For "difficujt" -> "difficult"
+    'JJ': [''],       # Phone number artifacts
+    'JJR': [''],      # Phone number artifacts
+    'l1': ['d'],      # Number/letter confusion
+    '0': ['o', 'O'],  # Zero/letter O confusion
+    'S': ['5'],       # Letter S/number 5 confusion
+    '5': ['S'],       # Number 5/letter S confusion
+    '1': ['l', 'I'],  # Number 1/letter l/I confusion
     # Add your new character confusions here
 }
 ```
 
 ## Performance Considerations
 
-The targeted OCR process is more computationally intensive than standard OCR due to:
-- Running 6 different OCR methods on each page
+The enhanced targeted OCR process is more computationally intensive than standard OCR due to:
+- Running 7 different OCR methods on each page (increased from 6)
 - Higher DPI processing (1500 DPI)
-- Additional image preprocessing steps
+- Additional advanced image preprocessing steps
+- Comprehensive pattern-based post-processing
 
 For best results:
-- Use 1500 DPI for detailed text
-- Use 1200 DPI for faster processing with reasonable quality
+- Use 1500 DPI for detailed text and maximum accuracy
+- Use 1200 DPI for faster processing with good quality
+- The enhanced preprocessing particularly improves accuracy for degraded or poor-quality documents
+
+## New Pattern-Based Corrections
+
+The enhanced system now includes comprehensive pattern recognition that automatically fixes:
+
+### URL and Web Address Corrections
+- `httos://` → `https://`
+- `hftp://` → `http://`
+- `wwvv.` → `www.`
+- `github.corn/` → `github.com/`
+- `gmail.corn` → `gmail.com`
+- And many other common web address OCR errors
+
+### Phone Number Cleaning
+- Removes `JJ` and `JJR` artifacts commonly appearing near phone numbers
+- Cleans up standalone OCR artifacts that interfere with phone number readability
+
+### Email Address Corrections
+- Fixes common domain OCR errors like `.corn` → `.com`
+- Handles major email providers (Gmail, Yahoo, Outlook, Hotmail)
+
+### Word Separation Fixes
+- Reconnects words incorrectly separated by OCR
+- Handles patterns like `manage ment` → `management`
+- Fixes `develop ment` → `development`
+
+### Character Substitution in Context
+- Comprehensive `rn` → `m` corrections for common words
+- Context-aware corrections that preserve proper capitalization
+- Handles words like `cornpany` → `company`, `rnanagement` → `management`
 
 ## Automated Workflow
 

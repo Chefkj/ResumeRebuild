@@ -57,6 +57,35 @@ class TargetedOCRImprover:
             "Villereek": "Millcreek",
             "VillereekK": "Millcreek",
             "vill": "mill",
+            # Common OCR substitution errors
+            "cornpany": "company",
+            "comrnittee": "committee", 
+            "rnanagement": "management",
+            "cornmunication": "communication",
+            "rnanufacturing": "manufacturing",
+            "rnarketing": "marketing",
+            "developrnent": "development",
+            "environrnent": "environment",
+            "Environrnent": "Environment",
+            "requirernents": "requirements",
+            "achievernent": "achievement",
+            "irnplementation": "implementation",
+            "Irnplementation": "Implementation",
+            "docurnent": "document",
+            "rnonitoring": "monitoring",
+            "prornotion": "promotion",
+            "recomrnendation": "recommendation",
+            "Recomrnendation": "Recommendation",
+            # Additional common corrections
+            "departrnent": "department",
+            "rnanager": "manager",
+            # URL and protocol fixes
+            "httos": "https",
+            "hftp": "http",
+            "wwvv": "www",
+            # Common character substitutions
+            "JJ": "",  # Common phone number misreading
+            "JJR": "",  # Another phone pattern
             # Add more known substitutions here
         }
         
@@ -77,6 +106,20 @@ class TargetedOCRImprover:
             'C': ['d', 'D'],  # For "Ciplomacy" -> "diplomacy"
             'v': ['m'],       # For "villereek" -> "millcreek"
             'vi': ['mi'],     # For prefix confusions "vill" -> "mill"
+            'rn': ['m'],      # Common OCR confusion "rn" -> "m"
+            'cl': ['d'],      # For "clifficulty" -> "difficulty"
+            'cI': ['d'],      # Capital I confusion
+            'li': ['d'],      # For "lifficulty" -> "difficulty"
+            'ij': ['y'],      # For "identifij" -> "identify"
+            'tl': ['d'],      # For "studient" -> "student"
+            'fi': ['f'],      # For "difficujt" -> "difficult"
+            'JJ': [''],       # Phone number artifacts
+            'JJR': [''],      # Phone number artifacts
+            'l1': ['d'],      # Number/letter confusion
+            '0': ['o', 'O'],  # Zero/letter O confusion
+            'S': ['5'],       # Letter S/number 5 confusion
+            '5': ['S'],       # Number 5/letter S confusion
+            '1': ['l', 'I'],  # Number 1/letter l/I confusion
             # Add more common character confusions here
         }
     
@@ -145,6 +188,10 @@ class TargetedOCRImprover:
         # 6. Location-specific optimization (for header/address areas)
         result6 = self._process_location_specific(img)
         results.append(result6)
+        
+        # 7. Enhanced preprocessing approach
+        result7 = self._process_enhanced_preprocessing(img)
+        results.append(result7)
         
         # Combine results using a word-by-word voting mechanism
         combined_text = self._combine_results(results)
@@ -369,6 +416,71 @@ class TargetedOCRImprover:
         
         return text1
     
+    def _enhanced_image_preprocessing(self, img):
+        """
+        Apply advanced image preprocessing techniques to improve OCR accuracy
+        
+        Args:
+            img: PIL Image object
+            
+        Returns:
+            PIL.Image: Preprocessed image
+        """
+        # Convert to numpy array for OpenCV processing
+        np_img = np.array(img)
+        
+        if len(np_img.shape) == 3:  # Color image
+            gray = cv2.cvtColor(np_img, cv2.COLOR_RGB2GRAY)
+        else:
+            gray = np_img
+        
+        # Apply bilateral filter to reduce noise while preserving edges
+        denoised = cv2.bilateralFilter(gray, 9, 75, 75)
+        
+        # Apply histogram equalization to improve contrast
+        equalized = cv2.equalizeHist(denoised)
+        
+        # Apply morphological operations to improve character shapes
+        # Create kernel for morphological operations
+        kernel = np.ones((1, 1), np.uint8)
+        
+        # Opening (erosion followed by dilation) to remove noise
+        opened = cv2.morphologyEx(equalized, cv2.MORPH_OPEN, kernel)
+        
+        # Closing (dilation followed by erosion) to fill gaps in characters
+        closed = cv2.morphologyEx(opened, cv2.MORPH_CLOSE, kernel)
+        
+        # Apply adaptive thresholding for better binarization
+        adaptive_thresh = cv2.adaptiveThreshold(
+            closed, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2
+        )
+        
+        # Apply slight dilation to strengthen character strokes
+        dilated = cv2.dilate(adaptive_thresh, kernel, iterations=1)
+        
+        # Convert back to PIL Image
+        processed_img = Image.fromarray(dilated)
+        
+        return processed_img
+    
+    def _process_enhanced_preprocessing(self, img):
+        """
+        Apply enhanced preprocessing before OCR for better accuracy
+        
+        Args:
+            img: PIL Image object
+            
+        Returns:
+            str: OCR text result
+        """
+        # Apply enhanced preprocessing
+        processed_img = self._enhanced_image_preprocessing(img)
+        
+        # Run OCR with the best configuration for processed images
+        text = pytesseract.image_to_string(processed_img, config=self.base_config_psm6)
+        
+        return text
+    
     def _combine_results(self, results):
         """
         Combine multiple OCR results using a word-by-word voting mechanism
@@ -438,6 +550,216 @@ class TargetedOCRImprover:
     def _apply_corrections(self, text):
         """
         Apply known corrections to the text
+        
+        Args:
+            text: Text to correct
+            
+        Returns:
+            str: Corrected text
+        """
+        # Split text into words for processing
+        words = text.split()
+        corrected_words = []
+        
+        # Look for location patterns: city, state ZIP
+        # For example: "villereek, UT 84106" should become "millcreek, UT 84106"
+        location_pattern = re.compile(r'(\w+),\s*([A-Z]{2})\s*(\d{5})')
+        
+        for i, word in enumerate(words):
+            # Convert to lowercase for checking
+            word_lower = word.lower()
+            
+            # Check if word is in known problem words
+            if word_lower in self.known_problem_words:
+                # Replace with correct word, preserving capitalization
+                correct_word = self.known_problem_words[word_lower]
+                
+                # Preserve original capitalization pattern
+                if word.isupper():
+                    corrected = correct_word.upper()
+                elif word[0].isupper():
+                    corrected = correct_word.capitalize()
+                else:
+                    corrected = correct_word
+                    
+                corrected_words.append(corrected)
+                logger.info(f"Corrected '{word}' to '{corrected}'")
+            else:
+                # Special handling for location patterns
+                if i < len(words) - 2 and word.endswith(',') and len(words[i+1]) == 2 and words[i+1].isupper():
+                    # This might be part of a location pattern: "villereek, UT 84106"
+                    city_part = word.rstrip(',')
+                    if city_part.lower() == 'villereek':
+                        corrected = 'millcreek,'
+                        corrected_words.append(corrected)
+                        logger.info(f"Corrected location '{word}' to '{corrected}'")
+                    else:
+                        corrected_words.append(word)
+                else:
+                    # Look for standalone instances of villereek without comma
+                    if word_lower == 'villereek':
+                        corrected = 'millcreek'
+                        if word[0].isupper():
+                            corrected = corrected.capitalize()
+                        corrected_words.append(corrected)
+                        logger.info(f"Corrected '{word}' to '{corrected}'")
+                    else:
+                        corrected_words.append(word)
+        
+        corrected_text = " ".join(corrected_words)
+        
+        # Also do a pattern-based replacement for location formats
+        corrected_text = location_pattern.sub(
+            lambda m: (f"millcreek, {m.group(2)} {m.group(3)}" 
+                      if m.group(1).lower() == 'villereek' 
+                      else m.group(0)), 
+            corrected_text
+        )
+        
+        return corrected_text
+
+    def _apply_pattern_corrections(self, text):
+        """
+        Apply pattern-based corrections for URLs, phone numbers, emails, and other structured data
+        
+        Args:
+            text: Text to correct
+            
+        Returns:
+            str: Text with pattern corrections applied
+        """
+        corrected_text = text
+        
+        # Fix URL patterns
+        # Common OCR errors in URLs
+        url_fixes = [
+            (r'\bhttos://', 'https://'),
+            (r'\bhftp://', 'http://'),
+            (r'\bwwvv\.', 'www.'),
+            (r'\bgithub\.corn/', 'github.com/'),
+            (r'\bgmail\.corn\b', 'gmail.com'),
+            (r'\byahoo\.corn\b', 'yahoo.com'),
+            (r'\boutlook\.corn\b', 'outlook.com'),
+            (r'\blinkedin\.corn/', 'linkedin.com/'),
+            (r'\bspoti\.fi([0-9a-zA-Z]+)', r'spoti.fi/\1'),
+            (r'\.corn\b', '.com'),  # General .corn -> .com fix
+        ]
+        
+        for pattern, replacement in url_fixes:
+            corrected_text = re.sub(pattern, replacement, corrected_text, flags=re.IGNORECASE)
+        
+        # Fix phone number patterns
+        # Remove common OCR artifacts in phone numbers
+        phone_fixes = [
+            # Remove JJ, JJR patterns often found near phone numbers
+            (r'\b(JJ|JJR)\s*(\d{3}[-\s]*\d{3}[-\s]*\d{4})', r'\2'),
+            (r'(\d{3}[-\s]*\d{3}[-\s]*\d{4})\s*(JJ|JJR)\b', r'\1'),
+            # Fix common digit misreading in phone numbers
+            (r'\b(\d{3})[-\s]*([O0])(\d{2})[-\s]*(\d{4})\b', r'\1-\g<2>\3-\4'),
+        ]
+        
+        for pattern, replacement in phone_fixes:
+            corrected_text = re.sub(pattern, replacement, corrected_text)
+        
+        # Fix email patterns
+        email_fixes = [
+            (r'@gmail\.corn\b', '@gmail.com'),
+            (r'@yahoo\.corn\b', '@yahoo.com'),
+            (r'@outlook\.corn\b', '@outlook.com'),
+            (r'@hotmail\.corn\b', '@hotmail.com'),
+        ]
+        
+        for pattern, replacement in email_fixes:
+            corrected_text = re.sub(pattern, replacement, corrected_text, flags=re.IGNORECASE)
+        
+        # Fix common word separations caused by OCR
+        word_separation_fixes = [
+            # Fix separated words
+            (r'\b([Cc])orn pany\b', r'\1ompany'),
+            (r'\b([Mm])anage ment\b', r'\1anagement'),
+            (r'\b([Dd])evelop ment\b', r'\1evelopment'),
+            (r'\b([Ee])nviron ment\b', r'\1nvironment'),
+            (r'\b([Ii])mple mentation\b', r'\1mplementation'),
+            (r'\b([Rr])equire ments\b', r'\1equirements'),
+            (r'\b([Aa])chieve ment\b', r'\1chievement'),
+            # Fix common character substitutions in context
+            (r'\b([A-Za-z]+)rn([a-z]+)\b', self._fix_rn_substitution),
+        ]
+        
+        for pattern, replacement in word_separation_fixes:
+            if callable(replacement):
+                corrected_text = re.sub(pattern, replacement, corrected_text)
+            else:
+                corrected_text = re.sub(pattern, replacement, corrected_text)
+        
+        return corrected_text
+    
+    def _fix_rn_substitution(self, match):
+        """
+        Fix common 'rn' -> 'm' substitution in context
+        
+        Args:
+            match: Regex match object
+            
+        Returns:
+            str: Corrected word
+        """
+        word = match.group(0)
+        prefix = match.group(1)
+        suffix = match.group(2)
+        
+        # Common words where 'rn' should be 'm'
+        common_rn_to_m = {
+            'cornpany': 'company',
+            'comrnittee': 'committee',
+            'rnanagement': 'management',
+            'cornmunication': 'communication',
+            'rnanufacturing': 'manufacturing',
+            'rnarketing': 'marketing',
+            'developrnent': 'development',
+            'environrnent': 'environment',
+            'requirernents': 'requirements',
+            'achievernent': 'achievement',
+            'irnplementation': 'implementation',
+            'docurnent': 'document',
+            'rnonitoring': 'monitoring',
+            'prornotion': 'promotion',
+            'recomrnendation': 'recommendation',
+        }
+        
+        word_lower = word.lower()
+        if word_lower in common_rn_to_m:
+            corrected = common_rn_to_m[word_lower]
+            # Preserve original capitalization
+            if word[0].isupper():
+                corrected = corrected.capitalize()
+            if word.isupper():
+                corrected = corrected.upper()
+            return corrected
+        
+        return word
+
+    def _apply_corrections(self, text):
+        """
+        Apply known corrections to the text including pattern-based fixes
+        
+        Args:
+            text: Text to correct
+            
+        Returns:
+            str: Corrected text
+        """
+        # First apply word-level corrections
+        corrected_text = self._apply_word_corrections(text)
+        
+        # Then apply pattern-based corrections
+        corrected_text = self._apply_pattern_corrections(corrected_text)
+        
+        return corrected_text
+    
+    def _apply_word_corrections(self, text):
+        """
+        Apply known word corrections to the text
         
         Args:
             text: Text to correct
