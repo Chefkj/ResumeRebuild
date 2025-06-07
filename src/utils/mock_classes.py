@@ -27,6 +27,9 @@ class MockManageAIAPIManager:
         self.port = port
         self.server_running = False
     
+    def get_api_client(self):
+        return MockAPIClient()
+    
     def start_server(self):
         self.server_running = True
         return True
@@ -44,9 +47,23 @@ class MockConnectionType:
     LLM_DIRECT = "llm_direct"
 
 class MockResumeAPIIntegration:
-    def __init__(self, connection_type=None, local_url=None, manageai_url=None, api_key=None):
+    def __init__(self, connection_type=None, local_url=None, manageai_url=None, api_key=None, api_client=None):
         self.connection_type = connection_type
         self._connection_active = True
+        self.api_client = api_client
+    
+    def process_with_context(self, user_input, resume_content="", job_description=""):
+        # Mock AI response based on input
+        if "improve" in user_input.lower():
+            return f"Here's an improved version of your resume:\n\n{resume_content[:200]}... [Mock improvements applied]"
+        elif "tailor" in user_input.lower() and job_description:
+            return f"I've tailored your resume for this job. Here are the key improvements:\n\n- Added relevant keywords from the job posting\n- Emphasized matching skills and experience\n- Reordered sections for better alignment"
+        elif "format" in user_input.lower():
+            return "I've reformatted your resume with better structure and professional styling."
+        elif "keyword" in user_input.lower():
+            return "I've optimized your resume with industry-relevant keywords for better ATS compatibility."
+        else:
+            return f"Based on your question '{user_input}', here's my advice for your resume: Consider focusing on quantifiable achievements and using action verbs to make your experience more impactful."
     
     def improve_resume(self, resume_content, job_description=None, feedback=None):
         return {
