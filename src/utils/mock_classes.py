@@ -5,6 +5,16 @@ Mock classes for testing GUI without full dependencies
 class MockPDFExtractor:
     def extract_text(self, pdf_path):
         return f"Mock extracted text from {pdf_path}"
+    
+    def extract(self, pdf_path):
+        """Mock extract method that returns a simple object with raw_text attribute"""
+        class MockResumeContent:
+            def __init__(self, text):
+                self.raw_text = text
+                self.contact_info = {}
+                self.sections = []
+        
+        return MockResumeContent(f"Mock resume content extracted from {pdf_path}\n\nJOHN SAMPLE\nEmail: john@example.com\nPhone: (555) 123-4567\n\nPROFESSIONAL SUMMARY\nExperienced professional with expertise in various fields.\n\nEXPERIENCE\nSample Company - Sample Role (2020-Present)\n• Accomplished various tasks\n• Delivered results")
 
 class MockResumeGenerator:
     def generate(self, content):

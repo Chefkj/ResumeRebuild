@@ -151,6 +151,8 @@ class ResumeRebuilderApp {
             this.showToast('Error uploading file: ' + error.message, 'error');
         } finally {
             this.setLoading(false);
+            // Reset file input to allow re-uploading the same file
+            document.getElementById('file-input').value = '';
         }
     }
     

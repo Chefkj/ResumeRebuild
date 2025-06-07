@@ -17,24 +17,41 @@ sys.path.insert(0, os.path.dirname(__file__))
 # Try to import real classes, fall back to mocks if not available
 try:
     from utils.pdf_extractor import PDFExtractor
+    pdf_extractor_available = True
+except ImportError as e:
+    logger.warning(f"PDFExtractor import failed: {e}")
+    from utils.mock_classes import MockPDFExtractor as PDFExtractor
+    pdf_extractor_available = False
+
+try:
     from utils.resume_generator import ResumeGenerator
+except ImportError:
+    from utils.mock_classes import MockResumeGenerator as ResumeGenerator
+
+try:
     from utils.job_analyzer import JobAnalyzer
+except ImportError:
+    from utils.mock_classes import MockJobAnalyzer as JobAnalyzer
+
+try:
     from utils.api_client import APIClient
+except ImportError:
+    from utils.mock_classes import MockAPIClient as APIClient
+
+try:
     from utils.manageai_api_manager import ManageAIAPIManager
+except ImportError:
+    from utils.mock_classes import MockManageAIAPIManager as ManageAIAPIManager
+
+try:
     from utils.resume_api_integration import ResumeAPIIntegration, ConnectionType
+except ImportError:
+    from utils.mock_classes import MockResumeAPIIntegration as ResumeAPIIntegration, MockConnectionType as ConnectionType
+
+try:
     from utils.pdf_content_replacer import PDFContentReplacer
 except ImportError:
-    # Import mock classes when real ones are not available
-    from utils.mock_classes import (
-        MockPDFExtractor as PDFExtractor,
-        MockResumeGenerator as ResumeGenerator,
-        MockJobAnalyzer as JobAnalyzer,
-        MockAPIClient as APIClient,
-        MockManageAIAPIManager as ManageAIAPIManager,
-        MockResumeAPIIntegration as ResumeAPIIntegration,
-        MockConnectionType as ConnectionType,
-        MockPDFContentReplacer as PDFContentReplacer
-    )
+    from utils.mock_classes import MockPDFContentReplacer as PDFContentReplacer
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -61,29 +78,30 @@ class WebResumeHandler:
         self.resume_generator = ResumeGenerator()
         self.job_analyzer = JobAnalyzer()
         
-        # Initialize ManageAI API Manager
+        # Initialize API components with better error handling
         try:
             self.api_manager = ManageAIAPIManager()
-            self.api_client = self.api_manager.get_api_client()
+            # Try to get API client if the method exists
+            if hasattr(self.api_manager, 'get_api_client'):
+                self.api_client = self.api_manager.get_api_client()
+            else:
+                self.api_client = APIClient()
             
             # Create ResumeAPIIntegration with proper connection type
-            connection_type = getattr(ConnectionType, 'MANAGEAI', None)
-            if connection_type:
-                self.resume_api = ResumeAPIIntegration(
-                    api_client=self.api_client,
-                    connection_type=connection_type
-                )
+            if hasattr(ConnectionType, 'MANAGEAI'):
+                connection_type = ConnectionType.MANAGEAI
             else:
-                logger.warning("MANAGEAI connection type not found, using mock")
-                self.resume_api = ResumeAPIIntegration(
-                    api_client=self.api_client,
-                    connection_type='mock'
-                )
+                connection_type = 'mock'
+                
+            self.resume_api = ResumeAPIIntegration(
+                api_client=self.api_client,
+                connection_type=connection_type
+            )
         except Exception as e:
-            logger.warning(f"Failed to initialize real API client: {e}")
+            logger.warning(f"Failed to initialize API components: {e}")
             # Use mock implementations
             self.api_manager = ManageAIAPIManager()
-            self.api_client = self.api_manager.get_api_client()
+            self.api_client = APIClient()
             self.resume_api = ResumeAPIIntegration(
                 api_client=self.api_client,
                 connection_type='mock'
@@ -93,7 +111,9 @@ class WebResumeHandler:
         """Extract text from uploaded file."""
         try:
             if file_path.lower().endswith('.pdf'):
-                return self.pdf_extractor.extract_text(file_path)
+                # Use the correct method for PDFExtractor
+                resume_content = self.pdf_extractor.extract(file_path)
+                return resume_content.raw_text
             elif file_path.lower().endswith('.txt'):
                 with open(file_path, 'r', encoding='utf-8') as f:
                     return f.read()
