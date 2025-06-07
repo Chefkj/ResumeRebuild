@@ -535,7 +535,7 @@ class PDFExtractor:
             return ""
             
         # Use OCR text if available (usually the best for section headers)
-        if texts[3] and len(texts[3]) > 200:  # text4 is from Tesseract OCR
+        if len(texts) > 3 and texts[3] and len(texts[3]) > 200:  # text4 is from Tesseract OCR
             return texts[3]
         
         # Compare extraction quality of the different methods
