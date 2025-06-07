@@ -13,17 +13,25 @@ import io
 import pyautogui
 from typing import Dict, List, Any, Optional
 from urllib.parse import quote_plus
-
-# Import Agent-S components
-from gui_agents.s2.agents.agent_s import AgentS2
-from gui_agents.s2.agents.grounding import OSWorldACI
-from gui_agents.utils import download_kb_data
 import platform
 
 from src.utils.env_loader import get_api_key, get_setting
 
 # Configure logger
 logger = logging.getLogger(__name__)
+
+# Import Agent-S components
+try:
+    from gui_agents.s2.agents.agent_s import AgentS2
+    from gui_agents.s2.agents.grounding import OSWorldACI
+    from gui_agents.utils import download_kb_data
+    AGENT_S_AVAILABLE = True
+except ImportError:
+    logger.warning("Agent-S (gui_agents) package not installed. Please install it with: pip install gui_agents")
+    AgentS2 = None
+    OSWorldACI = None
+    download_kb_data = None
+    AGENT_S_AVAILABLE = False
 
 class GlassdoorAgentS:
     """Agent-S implementation for Glassdoor job search."""
@@ -49,12 +57,8 @@ class GlassdoorAgentS:
         # Check if we have the required API keys
         if self.model_provider == "openai" and not self.openai_api_key:
             logger.warning("OpenAI API key not configured for Agent-S. Set OPENAI_API_KEY in your .env file.")
-        elif self.model_provider == "anthropic" and not self.anthropic_api_key:
-            logger.warning("Anthropic API key not configured for Agent-S. Set ANTHROPIC_API_KEY in your .env file.")
-            
-        if self.grounding_model_provider == "openai" and not self.openai_api_key:
-            logger.warning("OpenAI API key not configured for Agent-S grounding. Set OPENAI_API_KEY in your .env file.")
-        elif self.grounding_model_provider == "anthropic" and not self.anthropic_api_key:
+        
+        if self.model_provider == "anthropic" and not self.anthropic_api_key:
             logger.warning("Anthropic API key not configured for Agent-S grounding. Set ANTHROPIC_API_KEY in your .env file.")
     
     def _initialize_agent(self):
