@@ -6,14 +6,29 @@ GUI interface for the Resume Rebuilder application
 import os
 import sys
 import tkinter as tk
-from tkinter import filedialog, ttk, scrolledtext, messagebox
-from utils.pdf_extractor import PDFExtractor
-from utils.resume_generator import ResumeGenerator
-from utils.job_analyzer import JobAnalyzer
-from utils.api_client import APIClient
-from utils.manageai_api_manager import ManageAIAPIManager
-from utils.resume_api_integration import ResumeAPIIntegration, ConnectionType
-from utils.pdf_content_replacer import PDFContentReplacer
+from tkinter import filedialog, ttk, scrolledtext, messagebox, simpledialog
+
+# Try to import real classes, fall back to mocks if not available
+try:
+    from utils.pdf_extractor import PDFExtractor
+    from utils.resume_generator import ResumeGenerator
+    from utils.job_analyzer import JobAnalyzer
+    from utils.api_client import APIClient
+    from utils.manageai_api_manager import ManageAIAPIManager
+    from utils.resume_api_integration import ResumeAPIIntegration, ConnectionType
+    from utils.pdf_content_replacer import PDFContentReplacer
+except ImportError:
+    # Import mock classes when real ones are not available
+    from utils.mock_classes import (
+        MockPDFExtractor as PDFExtractor,
+        MockResumeGenerator as ResumeGenerator,
+        MockJobAnalyzer as JobAnalyzer,
+        MockAPIClient as APIClient,
+        MockManageAIAPIManager as ManageAIAPIManager,
+        MockResumeAPIIntegration as ResumeAPIIntegration,
+        MockConnectionType as ConnectionType,
+        MockPDFContentReplacer as PDFContentReplacer
+    )
 
 class ResumeRebuilderApp:
     """Main application class for the Resume Rebuilder GUI."""
@@ -84,6 +99,7 @@ class ResumeRebuilderApp:
         self.tab_analyze = ttk.Frame(self.notebook)
         self.tab_generate = ttk.Frame(self.notebook)
         self.tab_replace = ttk.Frame(self.notebook)  # New tab for PDF content replacement
+        self.tab_chat_workspace = ttk.Frame(self.notebook)  # New unified chat workspace
         self.tab_api = ttk.Frame(self.notebook)
         
         self.notebook.add(self.tab_upload, text="Upload Resume")
@@ -91,6 +107,7 @@ class ResumeRebuilderApp:
         self.notebook.add(self.tab_analyze, text="Analyze Job")
         self.notebook.add(self.tab_generate, text="Generate Resume")
         self.notebook.add(self.tab_replace, text="Replace PDF Content")  # New tab
+        self.notebook.add(self.tab_chat_workspace, text="Chat Workspace")  # New unified interface
         self.notebook.add(self.tab_api, text="API Settings")
         
         # Setup Upload tab
@@ -107,6 +124,9 @@ class ResumeRebuilderApp:
         
         # Setup Replace Content tab
         self.setup_replace_tab()
+        
+        # Setup Chat Workspace tab
+        self.setup_chat_workspace_tab()
         
         # Setup API Settings tab
         self.setup_api_tab()
@@ -1284,6 +1304,584 @@ class ResumeRebuilderApp:
         except Exception as e:
             self.status_var.set(f"Error: {str(e)}")
             messagebox.showerror("Error", f"Failed to load PDF content: {str(e)}")
+
+    def setup_chat_workspace_tab(self):
+        """Setup the unified Chat Workspace tab with enhanced components."""
+        try:
+            from utils.chat_interface import ChatInterface
+            from utils.pdf_viewer import PDFViewer
+            from utils.enhanced_editor import EnhancedEditor
+        except ImportError:
+            # Fallback to basic implementation if enhanced components aren't available
+            self.setup_chat_workspace_tab_basic()
+            return
+        
+        # Main container with paned window for resizable panels
+        main_paned = ttk.PanedWindow(self.tab_chat_workspace, orient=tk.HORIZONTAL)
+        main_paned.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        # Left panel for chat interface
+        self.chat_frame = ttk.Frame(main_paned, width=350)
+        
+        # Initialize enhanced chat interface
+        self.chat_interface = ChatInterface(
+            self.chat_frame,
+            llm_callback=self.process_chat_with_llm
+        )
+        
+        # Right panel with PDF viewer and edit tools
+        right_paned = ttk.PanedWindow(main_paned, orient=tk.VERTICAL)
+        
+        # PDF Viewer section
+        pdf_frame = ttk.LabelFrame(right_paned, text="Resume Preview")
+        self.pdf_viewer = PDFViewer(pdf_frame)
+        
+        # Enhanced Editor section
+        edit_frame = ttk.LabelFrame(right_paned, text="Resume Editor")
+        self.enhanced_editor = EnhancedEditor(
+            edit_frame,
+            content_changed_callback=self.on_editor_content_changed
+        )
+        
+        # Add panels to paned windows
+        right_paned.add(pdf_frame, weight=2)
+        right_paned.add(edit_frame, weight=1)
+        
+        main_paned.add(self.chat_frame, weight=1)
+        main_paned.add(right_paned, weight=3)
+        
+        # Initialize workspace variables
+        self.workspace_resume_content = None
+        self.workspace_pdf_path = None
+        
+        # Add welcome message
+        self.chat_interface.add_system_message(
+            "Welcome to the Resume Chat Workspace! Load a resume to get started with AI-powered improvements."
+        )
+
+    def setup_chat_workspace_tab_basic(self):
+        """Basic setup when enhanced components aren't available."""
+        # Keep the existing implementation as fallback
+        # Main container with paned window for resizable panels
+        main_paned = ttk.PanedWindow(self.tab_chat_workspace, orient=tk.HORIZONTAL)
+        main_paned.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        # Left panel for chat interface (initially collapsed)
+        self.chat_frame = ttk.Frame(main_paned)
+        self.chat_collapsed = tk.BooleanVar(value=False)  # Start expanded for now
+        
+        # Chat panel content
+        chat_container = ttk.LabelFrame(self.chat_frame, text="Resume Assistant Chat")
+        chat_container.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        # Chat controls
+        chat_controls = ttk.Frame(chat_container)
+        chat_controls.pack(fill=tk.X, pady=(0, 5))
+        
+        # Collapse/expand button
+        self.toggle_chat_btn = ttk.Button(
+            chat_controls, 
+            text="◀ Collapse", 
+            command=self.toggle_chat_panel,
+            width=12
+        )
+        self.toggle_chat_btn.pack(side=tk.LEFT, padx=5)
+        
+        # Clear chat button
+        ttk.Button(
+            chat_controls, 
+            text="Clear Chat", 
+            command=self.clear_chat,
+            width=12
+        ).pack(side=tk.LEFT, padx=5)
+        
+        # Chat history display
+        chat_history_frame = ttk.Frame(chat_container)
+        chat_history_frame.pack(fill=tk.BOTH, expand=True, pady=5)
+        
+        self.chat_history = scrolledtext.ScrolledText(
+            chat_history_frame,
+            wrap=tk.WORD,
+            height=15,
+            state=tk.DISABLED
+        )
+        self.chat_history.pack(fill=tk.BOTH, expand=True)
+        
+        # Chat input area
+        input_frame = ttk.Frame(chat_container)
+        input_frame.pack(fill=tk.X, pady=5)
+        
+        ttk.Label(input_frame, text="Ask about your resume:").pack(anchor=tk.W)
+        
+        # Chat input with scrolled text for multiline input
+        self.chat_input = scrolledtext.ScrolledText(
+            input_frame,
+            height=3,
+            wrap=tk.WORD
+        )
+        self.chat_input.pack(fill=tk.X, pady=2)
+        
+        # Send button and quick actions
+        button_frame = ttk.Frame(input_frame)
+        button_frame.pack(fill=tk.X, pady=2)
+        
+        ttk.Button(
+            button_frame,
+            text="Send",
+            command=self.send_chat_message,
+            style="Accent.TButton"
+        ).pack(side=tk.RIGHT, padx=2)
+        
+        # Quick action buttons
+        ttk.Button(
+            button_frame,
+            text="Improve Resume",
+            command=lambda: self.send_quick_message("Please review my resume and suggest improvements")
+        ).pack(side=tk.LEFT, padx=2)
+        
+        ttk.Button(
+            button_frame,
+            text="Tailor for Job",
+            command=lambda: self.send_quick_message("Help me tailor this resume for a specific job")
+        ).pack(side=tk.LEFT, padx=2)
+        
+        # Right panel with PDF viewer and edit tools
+        right_paned = ttk.PanedWindow(main_paned, orient=tk.VERTICAL)
+        
+        # PDF Viewer section
+        pdf_frame = ttk.LabelFrame(right_paned, text="Resume Preview")
+        
+        # PDF viewer controls
+        pdf_controls = ttk.Frame(pdf_frame)
+        pdf_controls.pack(fill=tk.X, pady=5)
+        
+        ttk.Button(pdf_controls, text="Load Resume", command=self.load_resume_for_workspace).pack(side=tk.LEFT, padx=5)
+        ttk.Button(pdf_controls, text="Refresh Preview", command=self.refresh_pdf_preview).pack(side=tk.LEFT, padx=5)
+        ttk.Button(pdf_controls, text="Save Changes", command=self.save_workspace_changes).pack(side=tk.LEFT, padx=5)
+        
+        # PDF display area (placeholder for now)
+        self.pdf_display = scrolledtext.ScrolledText(
+            pdf_frame,
+            wrap=tk.WORD,
+            height=20,
+            state=tk.DISABLED
+        )
+        self.pdf_display.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        # Edit Tools section
+        edit_frame = ttk.LabelFrame(right_paned, text="Edit Tools")
+        
+        # Edit tools controls
+        edit_controls = ttk.Frame(edit_frame)
+        edit_controls.pack(fill=tk.X, pady=5)
+        
+        ttk.Button(edit_controls, text="Undo", command=self.workspace_undo).pack(side=tk.LEFT, padx=2)
+        ttk.Button(edit_controls, text="Redo", command=self.workspace_redo).pack(side=tk.LEFT, padx=2)
+        ttk.Button(edit_controls, text="Bold", command=self.apply_bold).pack(side=tk.LEFT, padx=2)
+        ttk.Button(edit_controls, text="Italic", command=self.apply_italic).pack(side=tk.LEFT, padx=2)
+        
+        # Section management
+        section_controls = ttk.Frame(edit_frame)
+        section_controls.pack(fill=tk.X, pady=5)
+        
+        ttk.Label(section_controls, text="Sections:").pack(side=tk.LEFT, padx=5)
+        ttk.Button(section_controls, text="Add Section", command=self.add_resume_section).pack(side=tk.LEFT, padx=2)
+        ttk.Button(section_controls, text="Remove Section", command=self.remove_resume_section).pack(side=tk.LEFT, padx=2)
+        ttk.Button(section_controls, text="Reorder", command=self.reorder_sections).pack(side=tk.LEFT, padx=2)
+        
+        # Content editor
+        self.content_editor = scrolledtext.ScrolledText(
+            edit_frame,
+            wrap=tk.WORD,
+            height=15
+        )
+        self.content_editor.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        # Add panels to paned windows
+        right_paned.add(pdf_frame, weight=2)
+        right_paned.add(edit_frame, weight=1)
+        
+        main_paned.add(self.chat_frame, weight=1)
+        main_paned.add(right_paned, weight=3)
+        
+        # Initialize workspace variables
+        self.workspace_resume_content = None
+        self.workspace_pdf_path = None
+        self.chat_history_list = []
+        self.edit_history = []
+        self.edit_history_index = -1
+
+    def toggle_chat_panel(self):
+        """Toggle the visibility of the chat panel."""
+        if self.chat_collapsed.get():
+            # Expand chat panel
+            self.chat_frame.pack(fill=tk.BOTH, expand=True)
+            self.toggle_chat_btn.config(text="◀ Collapse")
+            self.chat_collapsed.set(False)
+        else:
+            # Collapse chat panel
+            self.chat_frame.pack_forget()
+            self.toggle_chat_btn.config(text="▶ Expand")
+            self.chat_collapsed.set(True)
+
+    def clear_chat(self):
+        """Clear the chat history."""
+        self.chat_history.config(state=tk.NORMAL)
+        self.chat_history.delete(1.0, tk.END)
+        self.chat_history.config(state=tk.DISABLED)
+        self.chat_history_list.clear()
+
+    def send_chat_message(self):
+        """Send a message in the chat interface."""
+        message = self.chat_input.get(1.0, tk.END).strip()
+        if not message:
+            return
+        
+        # Clear the input
+        self.chat_input.delete(1.0, tk.END)
+        
+        # Add user message to chat
+        self.add_chat_message("You", message)
+        
+        # Process with LLM (simplified for now)
+        try:
+            self.status_var.set("Processing your question...")
+            response = self.process_chat_with_llm(message)
+            self.add_chat_message("Assistant", response)
+            self.status_var.set("Ready")
+        except Exception as e:
+            self.add_chat_message("System", f"Error: {str(e)}")
+            self.status_var.set("Ready")
+
+    def send_quick_message(self, message):
+        """Send a predefined quick message."""
+        self.chat_input.delete(1.0, tk.END)
+        self.chat_input.insert(1.0, message)
+        self.send_chat_message()
+
+    def add_chat_message(self, sender, message):
+        """Add a message to the chat history."""
+        self.chat_history.config(state=tk.NORMAL)
+        
+        # Add timestamp and sender
+        import datetime
+        timestamp = datetime.datetime.now().strftime("%H:%M")
+        
+        # Format message
+        formatted_message = f"[{timestamp}] {sender}: {message}\n\n"
+        
+        self.chat_history.insert(tk.END, formatted_message)
+        self.chat_history.see(tk.END)
+        self.chat_history.config(state=tk.DISABLED)
+        
+        # Store in history list
+        self.chat_history_list.append({
+            "timestamp": timestamp,
+            "sender": sender,
+            "message": message
+        })
+
+    def process_chat_with_llm(self, message):
+        """Process the chat message with LLM integration."""
+        try:
+            # Use existing API integration
+            if not self.workspace_resume_content:
+                return "Please load a resume first using the 'Load Resume' button."
+            
+            # Prepare context with current resume content
+            resume_context = str(self.workspace_resume_content) if self.workspace_resume_content else "No resume loaded"
+            
+            # Create a context-aware prompt
+            contextual_prompt = f"User question: {message}\n\nCurrent resume content:\n{resume_context}\n\nPlease provide helpful advice about the resume."
+            
+            # Use the existing API integration to get response
+            response = self.api_integration.improve_resume(
+                resume_content=resume_context,
+                feedback=message
+            )
+            
+            if isinstance(response, dict) and 'improved_resume' in response:
+                return response['improved_resume']
+            elif isinstance(response, dict) and 'analysis' in response:
+                return response['analysis']
+            else:
+                return str(response)
+                
+        except Exception as e:
+            return f"Sorry, I couldn't process your request. Error: {str(e)}"
+
+    def load_resume_for_workspace(self):
+        """Load a resume for the workspace."""
+        filename = filedialog.askopenfilename(
+            title="Select Resume PDF",
+            filetypes=[("PDF files", "*.pdf"), ("All files", "*.*")]
+        )
+        
+        if filename:
+            try:
+                self.status_var.set("Loading resume...")
+                self.workspace_pdf_path = filename
+                
+                # Extract content from PDF
+                if hasattr(self, 'pdf_replacer') and self.pdf_replacer:
+                    analysis = self.pdf_replacer.analyze_resume(filename)
+                    self.workspace_resume_content = analysis.get('basic_resume', 'Could not extract content')
+                    
+                    # Update PDF display
+                    self.pdf_display.config(state=tk.NORMAL)
+                    self.pdf_display.delete(1.0, tk.END)
+                    self.pdf_display.insert(tk.END, str(self.workspace_resume_content))
+                    self.pdf_display.config(state=tk.DISABLED)
+                    
+                    # Update content editor
+                    self.content_editor.delete(1.0, tk.END)
+                    self.content_editor.insert(tk.END, str(self.workspace_resume_content))
+                    
+                    self.status_var.set("Resume loaded successfully")
+                    self.add_chat_message("System", f"Resume loaded: {os.path.basename(filename)}")
+                else:
+                    raise Exception("PDF replacer not available")
+                    
+            except Exception as e:
+                self.status_var.set(f"Error: {str(e)}")
+                messagebox.showerror("Error", f"Failed to load resume: {str(e)}")
+
+    def refresh_pdf_preview(self):
+        """Refresh the PDF preview with current content."""
+        if self.workspace_resume_content:
+            self.pdf_display.config(state=tk.NORMAL)
+            self.pdf_display.delete(1.0, tk.END)
+            self.pdf_display.insert(tk.END, str(self.workspace_resume_content))
+            self.pdf_display.config(state=tk.DISABLED)
+            self.status_var.set("Preview refreshed")
+
+    def save_workspace_changes(self):
+        """Save changes made in the workspace."""
+        if not self.workspace_pdf_path:
+            messagebox.showwarning("Warning", "No resume loaded to save.")
+            return
+        
+        try:
+            # Get updated content from editor
+            updated_content = self.content_editor.get(1.0, tk.END).strip()
+            self.workspace_resume_content = updated_content
+            
+            # Save to new PDF (simplified)
+            output_path = filedialog.asksaveasfilename(
+                title="Save Resume As",
+                defaultextension=".pdf",
+                filetypes=[("PDF files", "*.pdf"), ("All files", "*.*")]
+            )
+            
+            if output_path:
+                # For now, save as text file (would need proper PDF generation)
+                with open(output_path.replace('.pdf', '.txt'), 'w') as f:
+                    f.write(updated_content)
+                
+                self.status_var.set("Changes saved successfully")
+                self.add_chat_message("System", f"Resume saved to: {os.path.basename(output_path)}")
+            
+        except Exception as e:
+            self.status_var.set(f"Error: {str(e)}")
+            messagebox.showerror("Error", f"Failed to save changes: {str(e)}")
+
+    def workspace_undo(self):
+        """Undo the last edit operation."""
+        # Simplified undo - would need proper implementation
+        self.add_chat_message("System", "Undo functionality - to be implemented")
+
+    def workspace_redo(self):
+        """Redo the last undone operation."""
+        # Simplified redo - would need proper implementation
+        self.add_chat_message("System", "Redo functionality - to be implemented")
+
+    def apply_bold(self):
+        """Apply bold formatting to selected text."""
+        # Simplified formatting - would need proper implementation
+        self.add_chat_message("System", "Bold formatting - to be implemented")
+
+    def apply_italic(self):
+        """Apply italic formatting to selected text."""
+        # Simplified formatting - would need proper implementation
+        self.add_chat_message("System", "Italic formatting - to be implemented")
+
+    def add_resume_section(self):
+        """Add a new section to the resume."""
+        section_name = tk.simpledialog.askstring("Add Section", "Enter section name:")
+        if section_name:
+            current_content = self.content_editor.get(1.0, tk.END)
+            new_section = f"\n\n{section_name}:\n[Add content here]\n"
+            self.content_editor.insert(tk.END, new_section)
+            self.add_chat_message("System", f"Added new section: {section_name}")
+
+    def remove_resume_section(self):
+        """Remove a section from the resume."""
+        self.add_chat_message("System", "Section removal - to be implemented")
+
+    def reorder_sections(self):
+        """Reorder resume sections."""
+        self.add_chat_message("System", "Section reordering - to be implemented")
+
+    def on_editor_content_changed(self, new_content):
+        """Handle changes in the enhanced editor."""
+        if hasattr(self, 'pdf_viewer'):
+            # Update PDF viewer with new content
+            self.pdf_viewer.update_content(new_content)
+        
+        # Update workspace content
+        self.workspace_resume_content = new_content
+        
+        # Notify chat interface about content changes
+        if hasattr(self, 'chat_interface') and new_content != getattr(self, '_last_content', ''):
+            self.chat_interface.add_system_message("Resume content updated in editor.")
+            self._last_content = new_content
+
+    def load_resume_for_enhanced_workspace(self):
+        """Enhanced version of load resume for workspace."""
+        if not hasattr(self, 'enhanced_editor'):
+            # Fall back to basic method
+            self.load_resume_for_workspace()
+            return
+        
+        filename = filedialog.askopenfilename(
+            title="Select Resume PDF",
+            filetypes=[("PDF files", "*.pdf"), ("Text files", "*.txt"), ("All files", "*.*")]
+        )
+        
+        if filename:
+            try:
+                self.status_var.set("Loading resume...")
+                self.workspace_pdf_path = filename
+                
+                # Extract content from PDF
+                if filename.endswith('.pdf') and hasattr(self, 'pdf_replacer') and self.pdf_replacer:
+                    analysis = self.pdf_replacer.analyze_resume(filename)
+                    content = analysis.get('basic_resume', 'Could not extract content')
+                elif filename.endswith('.txt'):
+                    with open(filename, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                else:
+                    content = f"Loaded file: {filename}\n[Content extraction not supported for this file type]"
+                
+                self.workspace_resume_content = content
+                
+                # Update all components
+                if hasattr(self, 'pdf_viewer'):
+                    self.pdf_viewer.load_pdf(filename, content)
+                
+                if hasattr(self, 'enhanced_editor'):
+                    self.enhanced_editor.set_content(content)
+                
+                if hasattr(self, 'chat_interface'):
+                    self.chat_interface.add_system_message(f"Resume loaded: {os.path.basename(filename)}")
+                
+                self.status_var.set("Resume loaded successfully")
+                
+            except Exception as e:
+                self.status_var.set(f"Error: {str(e)}")
+                messagebox.showerror("Error", f"Failed to load resume: {str(e)}")
+
+    def apply_chat_suggestion(self, suggestion_text):
+        """Apply a suggestion from the chat to the editor."""
+        if hasattr(self, 'enhanced_editor'):
+            # Insert suggestion at current cursor position
+            self.enhanced_editor.insert_text(f"\n\n--- AI Suggestion ---\n{suggestion_text}\n--- End Suggestion ---\n")
+            
+            if hasattr(self, 'chat_interface'):
+                self.chat_interface.add_system_message("Suggestion applied to editor. Review and integrate as needed.")
+        else:
+            # Fall back to basic implementation
+            if hasattr(self, 'content_editor'):
+                current_content = self.content_editor.get(1.0, tk.END)
+                self.content_editor.insert(tk.END, f"\n\n--- AI Suggestion ---\n{suggestion_text}\n--- End Suggestion ---\n")
+
+    def export_workspace_session(self):
+        """Export the entire workspace session including chat history and content."""
+        try:
+            from tkinter import filedialog
+            import json
+            import datetime
+            
+            filename = filedialog.asksaveasfilename(
+                title="Export Workspace Session",
+                defaultextension=".json",
+                filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
+            )
+            
+            if filename:
+                session_data = {
+                    "timestamp": datetime.datetime.now().isoformat(),
+                    "resume_path": self.workspace_pdf_path,
+                    "resume_content": self.workspace_resume_content,
+                    "chat_history": [],
+                    "editor_content": ""
+                }
+                
+                # Get chat history if available
+                if hasattr(self, 'chat_interface'):
+                    session_data["chat_history"] = self.chat_interface.get_chat_history()
+                
+                # Get editor content if available
+                if hasattr(self, 'enhanced_editor'):
+                    session_data["editor_content"] = self.enhanced_editor.get_content()
+                
+                with open(filename, 'w', encoding='utf-8') as f:
+                    json.dump(session_data, f, indent=2, ensure_ascii=False)
+                
+                if hasattr(self, 'chat_interface'):
+                    self.chat_interface.add_system_message(f"Workspace session exported to: {os.path.basename(filename)}")
+                
+                self.status_var.set("Session exported successfully")
+                
+        except Exception as e:
+            messagebox.showerror("Export Error", f"Failed to export session: {str(e)}")
+
+    def import_workspace_session(self):
+        """Import a previously exported workspace session."""
+        try:
+            from tkinter import filedialog
+            import json
+            
+            filename = filedialog.askopenfilename(
+                title="Import Workspace Session",
+                filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
+            )
+            
+            if filename:
+                with open(filename, 'r', encoding='utf-8') as f:
+                    session_data = json.load(f)
+                
+                # Restore resume content
+                if "resume_content" in session_data:
+                    self.workspace_resume_content = session_data["resume_content"]
+                    
+                    if hasattr(self, 'enhanced_editor'):
+                        self.enhanced_editor.set_content(self.workspace_resume_content)
+                    
+                    if hasattr(self, 'pdf_viewer'):
+                        self.pdf_viewer.update_content(self.workspace_resume_content)
+                
+                # Restore editor content if different
+                if "editor_content" in session_data and hasattr(self, 'enhanced_editor'):
+                    self.enhanced_editor.set_content(session_data["editor_content"])
+                
+                # Restore chat history
+                if "chat_history" in session_data and hasattr(self, 'chat_interface'):
+                    self.chat_interface.clear_chat()
+                    for msg in session_data["chat_history"]:
+                        self.chat_interface.add_message(
+                            msg["sender"], 
+                            msg["message"], 
+                            msg.get("type", "user")
+                        )
+                    
+                    self.chat_interface.add_system_message(f"Session imported from: {os.path.basename(filename)}")
+                
+                self.status_var.set("Session imported successfully")
+                
+        except Exception as e:
+            messagebox.showerror("Import Error", f"Failed to import session: {str(e)}")
+
 def main():
     """Main function to start the application."""
     root = tk.Tk()
