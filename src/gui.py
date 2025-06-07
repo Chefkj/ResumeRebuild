@@ -1343,6 +1343,25 @@ class ResumeRebuilderApp:
             content_changed_callback=self.on_editor_content_changed
         )
         
+        # Add session management toolbar at the top
+        session_toolbar = ttk.Frame(self.tab_chat_workspace)
+        session_toolbar.pack(fill=tk.X, pady=(0, 5))
+        
+        ttk.Label(session_toolbar, text="Session:", font=("", 10, "bold")).pack(side=tk.LEFT, padx=5)
+        ttk.Button(session_toolbar, text="Load Resume", command=self.load_resume_for_enhanced_workspace).pack(side=tk.LEFT, padx=2)
+        ttk.Button(session_toolbar, text="Export Session", command=self.export_workspace_session).pack(side=tk.LEFT, padx=2)
+        ttk.Button(session_toolbar, text="Import Session", command=self.import_workspace_session).pack(side=tk.LEFT, padx=2)
+        ttk.Button(session_toolbar, text="Save Resume", command=self.save_enhanced_workspace_resume).pack(side=tk.LEFT, padx=2)
+        
+        # Add separator
+        ttk.Separator(session_toolbar, orient=tk.VERTICAL).pack(side=tk.LEFT, fill=tk.Y, padx=10)
+        
+        # Add quick actions
+        ttk.Label(session_toolbar, text="Quick Actions:", font=("", 10, "bold")).pack(side=tk.LEFT, padx=5)
+        ttk.Button(session_toolbar, text="Format Resume", command=self.quick_format_resume).pack(side=tk.LEFT, padx=2)
+        ttk.Button(session_toolbar, text="Check ATS", command=self.quick_ats_check).pack(side=tk.LEFT, padx=2)
+        ttk.Button(session_toolbar, text="Generate Summary", command=self.quick_generate_summary).pack(side=tk.LEFT, padx=2)
+        
         # Add panels to paned windows
         right_paned.add(pdf_frame, weight=2)
         right_paned.add(edit_frame, weight=1)
@@ -1881,6 +1900,150 @@ class ResumeRebuilderApp:
                 
         except Exception as e:
             messagebox.showerror("Import Error", f"Failed to import session: {str(e)}")
+
+    def save_enhanced_workspace_resume(self):
+        """Save the current resume from the enhanced workspace."""
+        if not hasattr(self, 'enhanced_editor'):
+            messagebox.showwarning("Warning", "Enhanced editor not available.")
+            return
+        
+        content = self.enhanced_editor.get_content()
+        if not content.strip():
+            messagebox.showwarning("Warning", "No content to save.")
+            return
+        
+        filename = filedialog.asksaveasfilename(
+            title="Save Resume",
+            defaultextension=".txt",
+            filetypes=[("Text files", "*.txt"), ("PDF files", "*.pdf"), ("All files", "*.*")]
+        )
+        
+        if filename:
+            try:
+                if filename.endswith('.txt'):
+                    with open(filename, 'w', encoding='utf-8') as f:
+                        f.write(content)
+                    
+                    if hasattr(self, 'chat_interface'):
+                        self.chat_interface.add_system_message(f"Resume saved as text: {os.path.basename(filename)}")
+                    
+                    self.status_var.set("Resume saved successfully")
+                else:
+                    # For PDF saving, would need proper PDF generation
+                    messagebox.showinfo("PDF Save", "PDF generation feature - to be implemented with proper PDF library")
+                    
+            except Exception as e:
+                messagebox.showerror("Save Error", f"Failed to save resume: {str(e)}")
+
+    def quick_format_resume(self):
+        """Quick action to format the resume."""
+        if hasattr(self, 'enhanced_editor'):
+            self.enhanced_editor.clean_formatting()
+            self.enhanced_editor.apply_auto_formatting()
+            
+            if hasattr(self, 'chat_interface'):
+                self.chat_interface.add_system_message("Resume formatting applied automatically.")
+
+    def quick_ats_check(self):
+        """Quick action to check ATS compatibility."""
+        if not hasattr(self, 'enhanced_editor'):
+            return
+        
+        content = self.enhanced_editor.get_content()
+        
+        # Simple ATS check analysis
+        ats_tips = [
+            "✓ Use standard section headers (EXPERIENCE, EDUCATION, SKILLS)",
+            "✓ Avoid complex formatting and graphics",
+            "✓ Use standard fonts and bullet points",
+            "✓ Include relevant keywords from job descriptions",
+            "✓ Use consistent date formats",
+            "⚠ Consider adding more quantifiable achievements",
+            "⚠ Ensure contact information is at the top"
+        ]
+        
+        # Send to chat for detailed analysis
+        ats_message = "Please analyze this resume for ATS (Applicant Tracking System) compatibility and suggest improvements."
+        
+        if hasattr(self, 'chat_interface'):
+            self.chat_interface.send_quick_message(ats_message)
+            
+            # Also add quick tips
+            tips_text = "Quick ATS Tips:\n" + "\n".join(ats_tips)
+            self.chat_interface.add_message("ATS Assistant", tips_text, "system")
+
+    def quick_generate_summary(self):
+        """Quick action to generate a professional summary."""
+        if not hasattr(self, 'enhanced_editor'):
+            return
+        
+        content = self.enhanced_editor.get_content()
+        
+        summary_prompt = "Based on my resume content, please generate a powerful professional summary that highlights my key strengths, experience, and value proposition. Make it concise but impactful."
+        
+        if hasattr(self, 'chat_interface'):
+            self.chat_interface.send_quick_message(summary_prompt)
+
+    def process_chat_with_llm(self, message):
+        """Enhanced process chat with more context and better responses."""
+        try:
+            # Use existing API integration with enhanced context
+            if not self.workspace_resume_content:
+                # If no resume is loaded, provide general advice
+                general_responses = {
+                    "hello": "Hello! I'm your Resume Assistant. Please load a resume to get started with personalized advice.",
+                    "help": "I can help you improve your resume in many ways: content optimization, ATS compatibility, formatting, keyword suggestions, and more. Load a resume and ask me anything!",
+                    "improve": "To provide specific improvement suggestions, please load your resume first using the 'Load Resume' button.",
+                    "format": "I can help with resume formatting once you load your resume. I'll analyze structure, consistency, and ATS compatibility.",
+                }
+                
+                message_lower = message.lower()
+                for key, response in general_responses.items():
+                    if key in message_lower:
+                        return response
+                
+                return "Please load a resume first so I can provide personalized advice. Use the 'Load Resume' button to get started!"
+            
+            # Enhanced context preparation
+            resume_context = str(self.workspace_resume_content) if self.workspace_resume_content else "No resume loaded"
+            
+            # Get editor content if available and different from original
+            editor_content = ""
+            if hasattr(self, 'enhanced_editor'):
+                current_editor = self.enhanced_editor.get_content()
+                if current_editor != resume_context:
+                    editor_content = f"\n\nCurrent edited version:\n{current_editor}"
+            
+            # Create comprehensive context
+            full_context = f"""Resume content: {resume_context}{editor_content}
+
+User question: {message}
+
+Please provide specific, actionable advice for improving this resume. Focus on:
+- Content improvements and impact statements
+- ATS optimization and keyword suggestions  
+- Structure and formatting recommendations
+- Industry-specific best practices
+- Quantifiable achievements and metrics"""
+            
+            # Use the existing API integration
+            response = self.api_integration.improve_resume(
+                resume_content=full_context,
+                feedback=message
+            )
+            
+            if isinstance(response, dict):
+                if 'improved_resume' in response:
+                    return response['improved_resume']
+                elif 'analysis' in response:
+                    return response['analysis']
+                else:
+                    return str(response)
+            else:
+                return str(response)
+                
+        except Exception as e:
+            return f"I apologize, but I encountered an error while processing your request: {str(e)}. Please try rephrasing your question or check your API connection."
 
 def main():
     """Main function to start the application."""
