@@ -12,7 +12,7 @@ from typing import Dict, List, Any, Optional, Union
 from src.utils.env_loader import get_api_key, get_setting
 from src.utils.settings import Settings
 from src.utils.glassdoor_scraper import glassdoor_scraper
-from src.utils.agents_glassdoor import glassdoor_agent_s
+from src.utils.manageai_web_automation import manageai_web_client
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -27,40 +27,50 @@ class JobSearchAPIClient:
         
     def _load_api_keys(self):
         """Load API keys from settings or environment variables."""
-        # Get job search API keys
+        # Get job search API keys (used as fallbacks)
         self.linkedin_api_key = self.settings.settings.get('job_search', {}).get('linkedin_api_key', '')
         self.indeed_api_key = self.settings.settings.get('job_search', {}).get('indeed_api_key', '')
         self.ziprecruiter_api_key = self.settings.settings.get('job_search', {}).get('ziprecruiter_api_key', '')
         self.monster_api_key = self.settings.settings.get('job_search', {}).get('monster_api_key', '')
         
-        # Get web scraping credentials
+        # Get web scraping credentials (fallback for Glassdoor)
         self.glassdoor_username = get_setting("GLASSDOOR_USERNAME", "")
         self.glassdoor_password = get_setting("GLASSDOOR_PASSWORD", "")
         
-        # Log available APIs
-        available_apis = []
+        # Log available methods
+        available_methods = []
+        
+        # Web automation is always available through ManageAI
+        available_methods.append('LinkedIn (Web Automation)')
+        available_methods.append('Indeed (Web Automation)')
+        available_methods.append('Glassdoor (Web Automation)')
+        
+        # API fallbacks
         if self.linkedin_api_key:
-            available_apis.append('LinkedIn')
+            available_methods.append('LinkedIn (API Fallback)')
         if self.indeed_api_key:
-            available_apis.append('Indeed')
+            available_methods.append('Indeed (API Fallback)')
         if self.ziprecruiter_api_key:
-            available_apis.append('ZipRecruiter')
+            available_methods.append('ZipRecruiter (API)')
         if self.monster_api_key:
-            available_apis.append('Monster')
+            available_methods.append('Monster (API)')
         if self.glassdoor_username and self.glassdoor_password:
-            available_apis.append('Glassdoor (Scraper)')
+            available_methods.append('Glassdoor (Scraper Fallback)')
             
-        if available_apis:
-            logger.info(f"Available job search APIs: {', '.join(available_apis)}")
+        logger.info(f"Job search methods available: {', '.join(available_methods)}")
+        logger.info("Primary method: Web automation using browser OAuth (no API keys required)")
+        
+        if not any([self.linkedin_api_key, self.indeed_api_key, self.ziprecruiter_api_key, self.monster_api_key]):
+            logger.info("No API keys configured - relying entirely on web automation")
         else:
-            logger.warning("No job search API keys configured. Add them to your .env file or settings.")
+            logger.info("API keys configured as fallback options")
     
     def search_linkedin(self, 
                        query: str, 
                        location: Optional[str] = None,
                        limit: int = 10) -> List[Dict[str, Any]]:
         """
-        Search for jobs on LinkedIn.
+        Search for jobs on LinkedIn using web automation.
         
         Args:
             query: Job search query
@@ -70,41 +80,32 @@ class JobSearchAPIClient:
         Returns:
             List of job postings
         """
-        if not self.linkedin_api_key:
-            logger.error("LinkedIn API key not configured")
-            return []
-            
         try:
-            # Example implementation - replace with actual LinkedIn API endpoints
-            url = "https://api.linkedin.com/v2/jobs"
-            headers = {
-                "Authorization": f"Bearer {self.linkedin_api_key}",
-                "Content-Type": "application/json"
-            }
-            params = {
-                "keywords": query,
-                "location": location or "",
-                "limit": limit
-            }
+            logger.info(f"Searching LinkedIn for '{query}' in '{location or 'any location'}' using web automation")
             
-            # This is a placeholder - actual implementation would use the official LinkedIn API
-            logger.info(f"Searching LinkedIn for '{query}' in '{location or 'any location'}'")
-            logger.warning("LinkedIn API integration is a placeholder - implement actual API calls")
+            # Use ManageAI web automation for LinkedIn job search
+            results = manageai_web_client.search_linkedin_jobs(query, location, limit)
             
-            # Mocked response for development/testing
-            return [
-                {
-                    "id": "linkedin-job-1",
-                    "title": f"Senior {query} Developer",
-                    "company": "Example Corp",
-                    "location": location or "Remote",
-                    "url": "https://linkedin.com/jobs/view/123456",
-                    "description": f"We're looking for an experienced {query} developer...",
-                    "source": "LinkedIn"
-                }
-            ]
+            if results:
+                logger.info(f"Found {len(results)} LinkedIn jobs via web automation")
+                return results
+            else:
+                logger.warning("No LinkedIn jobs found via web automation")
+                return []
+                
         except Exception as e:
-            logger.error(f"Error searching LinkedIn: {e}")
+            logger.error(f"Error searching LinkedIn via web automation: {e}")
+            
+            # Fallback to API if web automation fails and API key is available
+            if self.linkedin_api_key:
+                logger.info("Falling back to LinkedIn API...")
+                try:
+                    # This is a placeholder - actual implementation would use the official LinkedIn API
+                    logger.warning("LinkedIn API integration is a placeholder - implement actual API calls")
+                    return []
+                except Exception as api_error:
+                    logger.error(f"LinkedIn API fallback also failed: {api_error}")
+            
             return []
     
     def search_indeed(self, 
@@ -112,7 +113,7 @@ class JobSearchAPIClient:
                      location: Optional[str] = None,
                      limit: int = 10) -> List[Dict[str, Any]]:
         """
-        Search for jobs on Indeed.
+        Search for jobs on Indeed using web automation.
         
         Args:
             query: Job search query
@@ -122,40 +123,32 @@ class JobSearchAPIClient:
         Returns:
             List of job postings
         """
-        if not self.indeed_api_key:
-            logger.error("Indeed API key not configured")
-            return []
-            
         try:
-            # Example implementation - replace with actual Indeed API endpoints
-            url = "https://api.indeed.com/ads/apisearch"
-            params = {
-                "publisher": self.indeed_api_key,
-                "q": query,
-                "l": location or "",
-                "limit": limit,
-                "format": "json",
-                "v": "2"
-            }
+            logger.info(f"Searching Indeed for '{query}' in '{location or 'any location'}' using web automation")
             
-            # This is a placeholder - actual implementation would use the official Indeed API
-            logger.info(f"Searching Indeed for '{query}' in '{location or 'any location'}'")
-            logger.warning("Indeed API integration is a placeholder - implement actual API calls")
+            # Use ManageAI web automation for Indeed job search
+            results = manageai_web_client.search_indeed_jobs(query, location, limit)
             
-            # Mocked response for development/testing
-            return [
-                {
-                    "id": "indeed-job-1",
-                    "title": f"{query} Engineer",
-                    "company": "Sample Inc",
-                    "location": location or "Remote",
-                    "url": "https://indeed.com/viewjob?jk=123456",
-                    "description": f"Looking for a {query} developer with 3+ years experience...",
-                    "source": "Indeed"
-                }
-            ]
+            if results:
+                logger.info(f"Found {len(results)} Indeed jobs via web automation")
+                return results
+            else:
+                logger.warning("No Indeed jobs found via web automation")
+                return []
+                
         except Exception as e:
-            logger.error(f"Error searching Indeed: {e}")
+            logger.error(f"Error searching Indeed via web automation: {e}")
+            
+            # Fallback to API if web automation fails and API key is available
+            if self.indeed_api_key:
+                logger.info("Falling back to Indeed API...")
+                try:
+                    # This is a placeholder - actual implementation would use the official Indeed API
+                    logger.warning("Indeed API integration is a placeholder - implement actual API calls")
+                    return []
+                except Exception as api_error:
+                    logger.error(f"Indeed API fallback also failed: {api_error}")
+            
             return []
             
     def search_ziprecruiter(self, 
@@ -256,7 +249,7 @@ class JobSearchAPIClient:
                         location: Optional[str] = None,
                         limit: int = 10) -> List[Dict[str, Any]]:
         """
-        Search for jobs on Glassdoor using web scraping.
+        Search for jobs on Glassdoor using web automation.
         
         Args:
             query: Job search query
@@ -266,15 +259,38 @@ class JobSearchAPIClient:
         Returns:
             List of job postings
         """
-        if not self.glassdoor_username or not self.glassdoor_password:
-            logger.warning("Glassdoor credentials not configured. Set GLASSDOOR_USERNAME and GLASSDOOR_PASSWORD in your .env file.")
-            return []
-            
         try:
-            logger.info(f"Searching Glassdoor for '{query}' in '{location or 'any location'}'")
-            return glassdoor_scraper.search_jobs(query, location, limit)
+            logger.info(f"Searching Glassdoor for '{query}' in '{location or 'any location'}' using web automation")
+            
+            # Use ManageAI web automation for Glassdoor job search
+            results = manageai_web_client.search_glassdoor_jobs(query, location, limit)
+            
+            if results:
+                logger.info(f"Found {len(results)} Glassdoor jobs via web automation")
+                return results
+            else:
+                logger.warning("No Glassdoor jobs found via web automation")
+                
+                # Fallback to Selenium scraper if available
+                if self.glassdoor_username and self.glassdoor_password:
+                    logger.info("Falling back to Selenium scraper...")
+                    return glassdoor_scraper.search_jobs(query, location, limit)
+                    
+                return []
+                
         except Exception as e:
-            logger.error(f"Error searching Glassdoor: {e}")
+            logger.error(f"Error searching Glassdoor via web automation: {e}")
+            
+            # Fallback to Selenium scraper if web automation fails
+            if self.glassdoor_username and self.glassdoor_password:
+                logger.info("Falling back to Selenium scraper...")
+                try:
+                    return glassdoor_scraper.search_jobs(query, location, limit)
+                except Exception as scraper_error:
+                    logger.error(f"Glassdoor scraper fallback also failed: {scraper_error}")
+            else:
+                logger.warning("Glassdoor credentials not configured. Set GLASSDOOR_USERNAME and GLASSDOOR_PASSWORD in your .env file for fallback scraping.")
+            
             return []
     
     def search_all_apis(self, 
@@ -282,44 +298,72 @@ class JobSearchAPIClient:
                        location: Optional[str] = None,
                        limit: int = 5) -> List[Dict[str, Any]]:
         """
-        Search for jobs across all configured APIs.
+        Search for jobs across all available sources (web automation prioritized).
         
         Args:
             query: Job search query
             location: Optional location filter
-            limit: Maximum number of results to return per API
+            limit: Maximum number of results to return per source
             
         Returns:
             List of job postings from all available sources
         """
         all_results = []
+        search_summary = []
         
-        # LinkedIn search
-        if self.linkedin_api_key:
+        # LinkedIn search (web automation first)
+        try:
             linkedin_results = self.search_linkedin(query, location, limit)
             all_results.extend(linkedin_results)
+            search_summary.append(f"LinkedIn: {len(linkedin_results)} jobs")
+        except Exception as e:
+            logger.error(f"LinkedIn search failed: {e}")
+            search_summary.append("LinkedIn: failed")
             
-        # Indeed search
-        if self.indeed_api_key:
+        # Indeed search (web automation first)
+        try:
             indeed_results = self.search_indeed(query, location, limit)
             all_results.extend(indeed_results)
+            search_summary.append(f"Indeed: {len(indeed_results)} jobs")
+        except Exception as e:
+            logger.error(f"Indeed search failed: {e}")
+            search_summary.append("Indeed: failed")
             
-        # ZipRecruiter search
-        if self.ziprecruiter_api_key:
-            ziprecruiter_results = self.search_ziprecruiter(query, location, limit)
-            all_results.extend(ziprecruiter_results)
-            
-        # Glassdoor search (web scraping)
-        if self.glassdoor_username and self.glassdoor_password:
+        # Glassdoor search (web automation first)
+        try:
             glassdoor_results = self.search_glassdoor(query, location, limit)
             all_results.extend(glassdoor_results)
+            search_summary.append(f"Glassdoor: {len(glassdoor_results)} jobs")
+        except Exception as e:
+            logger.error(f"Glassdoor search failed: {e}")
+            search_summary.append("Glassdoor: failed")
             
-        # Monster search
+        # ZipRecruiter search (API only for now)
+        if self.ziprecruiter_api_key:
+            try:
+                ziprecruiter_results = self.search_ziprecruiter(query, location, limit)
+                all_results.extend(ziprecruiter_results)
+                search_summary.append(f"ZipRecruiter: {len(ziprecruiter_results)} jobs")
+            except Exception as e:
+                logger.error(f"ZipRecruiter search failed: {e}")
+                search_summary.append("ZipRecruiter: failed")
+        else:
+            search_summary.append("ZipRecruiter: no API key")
+            
+        # Monster search (API only for now)
         if self.monster_api_key:
-            monster_results = self.search_monster(query, location, limit)
-            all_results.extend(monster_results)
+            try:
+                monster_results = self.search_monster(query, location, limit)
+                all_results.extend(monster_results)
+                search_summary.append(f"Monster: {len(monster_results)} jobs")
+            except Exception as e:
+                logger.error(f"Monster search failed: {e}")
+                search_summary.append("Monster: failed")
+        else:
+            search_summary.append("Monster: no API key")
             
-        logger.info(f"Found {len(all_results)} jobs across all configured job search APIs")
+        logger.info(f"Job search completed: {' | '.join(search_summary)}")
+        logger.info(f"Total: {len(all_results)} jobs found across all sources")
         return all_results
 
 # Create a singleton instance
