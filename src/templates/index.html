@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Rebuilder - AI-Powered Resume Editor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <h1><i class="fas fa-file-alt"></i> Resume Rebuilder</h1>
+                <div class="header-actions">
+                    <button id="load-session-btn" class="btn btn-secondary">
+                        <i class="fas fa-upload"></i> Load Session
+                    </button>
+                    <button id="save-session-btn" class="btn btn-secondary">
+                        <i class="fas fa-download"></i> Save Session
+                    </button>
+                    <button id="help-btn" class="btn btn-secondary">
+                        <i class="fas fa-question-circle"></i> Help
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <div class="workspace-container">
+            <!-- Chat Panel -->
+            <div class="chat-panel" id="chat-panel">
+                <div class="panel-header">
+                    <h3><i class="fas fa-robot"></i> AI Assistant</h3>
+                    <button id="toggle-chat-btn" class="btn btn-small">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                </div>
+                
+                <div class="chat-content">
+                    <!-- Quick Actions -->
+                    <div class="quick-actions">
+                        <button class="quick-action-btn" data-action="improve">
+                            <i class="fas fa-magic"></i> Improve Resume
+                        </button>
+                        <button class="quick-action-btn" data-action="tailor">
+                            <i class="fas fa-bullseye"></i> Tailor for Job
+                        </button>
+                        <button class="quick-action-btn" data-action="format">
+                            <i class="fas fa-align-left"></i> Format
+                        </button>
+                        <button class="quick-action-btn" data-action="keywords">
+                            <i class="fas fa-key"></i> Keywords
+                        </button>
+                    </div>
+
+                    <!-- Chat History -->
+                    <div class="chat-history" id="chat-history">
+                        <div class="message assistant-message">
+                            <div class="message-content">
+                                <strong>AI Assistant:</strong> Welcome to Resume Rebuilder! Upload your resume to get started, or ask me any questions about resume optimization.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chat Input -->
+                    <div class="chat-input-container">
+                        <textarea 
+                            id="chat-input" 
+                            placeholder="Ask about your resume, request improvements, or get job-specific advice..."
+                            rows="3"
+                        ></textarea>
+                        <div class="chat-controls">
+                            <button id="send-btn" class="btn btn-primary">
+                                <i class="fas fa-paper-plane"></i> Send
+                            </button>
+                            <button id="clear-chat-btn" class="btn btn-secondary">
+                                <i class="fas fa-trash"></i> Clear
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview Panel -->
+            <div class="preview-panel">
+                <div class="panel-header">
+                    <h3><i class="fas fa-eye"></i> Resume Preview</h3>
+                    <div class="preview-controls">
+                        <button id="upload-btn" class="btn btn-primary">
+                            <i class="fas fa-upload"></i> Upload Resume
+                        </button>
+                        <button id="refresh-preview-btn" class="btn btn-secondary">
+                            <i class="fas fa-sync"></i> Refresh
+                        </button>
+                        <button id="download-btn" class="btn btn-secondary">
+                            <i class="fas fa-download"></i> Download
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="preview-content">
+                    <div class="preview-display" id="preview-display">
+                        <div class="empty-state">
+                            <i class="fas fa-file-upload"></i>
+                            <h4>No Resume Loaded</h4>
+                            <p>Upload a PDF or text file to see your resume preview here.</p>
+                            <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">
+                                <i class="fas fa-upload"></i> Upload Resume
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Editor Panel -->
+            <div class="editor-panel">
+                <div class="panel-header">
+                    <h3><i class="fas fa-edit"></i> Editor</h3>
+                    <div class="editor-controls">
+                        <button id="undo-btn" class="btn btn-small" title="Undo">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                        <button id="redo-btn" class="btn btn-small" title="Redo">
+                            <i class="fas fa-redo"></i>
+                        </button>
+                        <button id="bold-btn" class="btn btn-small" title="Bold">
+                            <i class="fas fa-bold"></i>
+                        </button>
+                        <button id="italic-btn" class="btn btn-small" title="Italic">
+                            <i class="fas fa-italic"></i>
+                        </button>
+                        <button id="find-btn" class="btn btn-small" title="Find">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="editor-content">
+                    <textarea 
+                        id="content-editor" 
+                        placeholder="Your resume content will appear here. You can edit it directly or use the AI assistant for suggestions."
+                    ></textarea>
+                    
+                    <div class="editor-status">
+                        <span id="char-count">0 characters</span>
+                        <span id="word-count">0 words</span>
+                        <span id="line-count">1 line</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Job Description Modal -->
+        <div class="modal" id="job-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Job Description</h3>
+                    <button class="modal-close" onclick="closeJobModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>Paste the job description to tailor your resume:</p>
+                    <textarea id="job-description" rows="10" placeholder="Paste the job posting here..."></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeJobModal()">Cancel</button>
+                    <button class="btn btn-primary" onclick="submitJobDescription()">Tailor Resume</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- File Input (Hidden) -->
+        <input type="file" id="file-input" accept=".pdf,.txt" style="display: none;">
+
+        <!-- Loading Overlay -->
+        <div class="loading-overlay" id="loading-overlay">
+            <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Processing your request...</p>
+            </div>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div class="toast-container" id="toast-container"></div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
